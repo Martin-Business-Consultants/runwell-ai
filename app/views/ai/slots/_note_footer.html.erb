@@ -1,0 +1,5 @@
+<%# locals: (note:) %>
+<%# Under each note (the core's :note_footer slot): find the promises and work in it. %>
+<% if Ai.available_for?(note) %>
+  <%= render "ai/suggestions/card", kind: "note_actions", subject: note, row: true %>
+<% end %>

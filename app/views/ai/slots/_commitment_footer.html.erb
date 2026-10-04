@@ -1,0 +1,5 @@
+<%# locals: (commitment:) %>
+<%# Under each open commitment (the core's :commitment_footer slot): draft a reminder. %>
+<% if commitment.open? && Ai.available_for?(commitment) %>
+  <%= render "ai/suggestions/card", kind: "reminder", subject: commitment, row: true %>
+<% end %>

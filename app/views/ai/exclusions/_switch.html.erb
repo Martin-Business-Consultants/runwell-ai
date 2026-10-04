@@ -1,0 +1,11 @@
+<%# locals: (client:) %>
+<%# Keep a client out of AI: no assistant or suggestions on its records. A person's call, never an agent's. %>
+<% excluded = Ai::Exclusion.exists?(client_id: client.id) %>
+<section class="settings__section flex flex-column gap-half txt-small">
+  <% if excluded %>
+    <p class="margin-none"><%= status_tag "Kept out of AI" %> No assistant or suggestions on this <%= term(:client).downcase %>’s records.</p>
+    <div><%= button_to "Let AI help again", ai_exclusion_path(client.id), method: :delete, class: "btn txt-small" %></div>
+  <% else %>
+    <div><%= button_to "Keep out of AI", ai_exclusions_path, params: { client_id: client.id }, class: "btn btn--plain txt-small", title: "No assistant or suggestions on this #{term(:client).downcase}’s records" %></div>
+  <% end %>
+</section>

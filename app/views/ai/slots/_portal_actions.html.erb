@@ -1,0 +1,12 @@
+<%# locals: () %>
+<%# The client portal's header (the core's :portal_actions slot): Ask, when clients may. %>
+<% if Ai.portal_available_for?(current_contact) %>
+  <div class="display-contents" data-controller="dialog" data-action="keydown.esc->dialog#close:stop">
+    <button type="button" class="btn btn--plain txt-small" data-action="dialog#toggle"><%= icon_tag "ai" %> <span>Ask</span></button>
+    <dialog class="ai-panel panel shadow" data-dialog-target="dialog" aria-label="Ask">
+      <turbo-frame id="ai_panel" src="<%= portal_current_ai_chat_path %>" loading="lazy">
+        <p class="txt-small txt-subtle pad">Loading…</p>
+      </turbo-frame>
+    </dialog>
+  </div>
+<% end %>
