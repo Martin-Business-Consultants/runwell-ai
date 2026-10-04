@@ -1,4 +1,4 @@
-module Ai
+module RunwellAi
   # A Runwell plugin: the install's own AI, through RubyLLM (which the core bundles). An Ask panel
   # on every page (i) that answers from the records and proposes changes for people to approve,
   # suggestions on records, and an assistant clients can use in their portal. It acts through the
@@ -50,7 +50,7 @@ module Ai
     end
 
     config.to_prepare do
-      Runwell::Plugins.register :ai, name: "AI", version: Ai::VERSION, author: "Runwell",
+      Runwell::Plugins.register :ai, name: "AI", version: RunwellAi::VERSION, author: "Runwell",
         enabled_by_default: false, requires: ">= 2.18.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-ai",
         description: "Your own AI in Runwell, through your provider (Anthropic, OpenAI, Gemini, OpenRouter, OpenCode Zen or Ollama): an Ask panel on every page that answers from your records and proposes changes for you to approve, one-click suggestions on records, and an assistant for clients in their portal."
       Runwell::Plugins.settings :ai, "AI", -> { settings_ai_path }

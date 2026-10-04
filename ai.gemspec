@@ -1,8 +1,8 @@
-require_relative "lib/ai/version"
+require_relative "lib/runwell_ai/version"
 
 Gem::Specification.new do |spec|
   spec.name = "ai"
-  spec.version = Ai::VERSION
+  spec.version = RunwellAi::VERSION
   spec.summary = "In-app AI for Runwell, as a plugin"
   spec.authors = [ "Runwell" ]
   spec.homepage = "https://github.com/Martin-Business-Consultants/runwell-ai"
