@@ -1,7 +1,7 @@
 # Settings > Plugins > AI: the install's own AI (Ai, through RubyLLM). The owner picks a provider,
-# pastes its key (encrypted; blank keeps the saved one), chooses models and a monthly budget, and
-# switches it on. Shows this month's spend, by person and by kind, how often suggestions were used,
-# and the clients kept out of AI.
+# pastes its key (encrypted; blank keeps the saved one), picks models from the provider's own list
+# (AiModelsJob), sets a monthly budget, and switches it on. Shows this month's spend, by person and
+# by kind, how often suggestions were used, and the clients kept out of AI.
 class Ai::SettingsController < Ai::BaseController
   require_permission :manage_settings
   agent_tool :show_ai_settings, on: :show, title: "Show AI settings and usage",
@@ -10,6 +10,7 @@ class Ai::SettingsController < Ai::BaseController
 
   def show
     @setting = AiSetting.current
+    @setting.refresh_models_later if @setting.models_missing?
     @spent = Ai.spent
     month = Time.current.beginning_of_month..Time.current
     @by_person = AiChat.joins(:ruby_llm_usages).where(ruby_llm_usages: { created_at: month }).group(:user_id).sum("ruby_llm_usages.total_cost")

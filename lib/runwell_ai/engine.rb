@@ -22,6 +22,7 @@ module RunwellAi
         scope "settings", as: "settings" do
           resource :ai, only: %i[show update], controller: "ai/settings" do
             resource :test, only: :create, controller: "ai/setting_tests"
+            resource :models, only: :create, controller: "ai/setting_models"
           end
         end
 

@@ -15,8 +15,11 @@
       </p>
     </section>
 
-    <section class="settings__section flex flex-column gap-half">
-      <%= form_with model: @setting, url: settings_ai_path, method: :patch, class: "flex flex-column gap-half txt-small" do |form| %>
+    <%= form_with model: @setting, url: settings_ai_path, method: :patch, class: "flex flex-column gap txt-small", data: { controller: "form" } do |form| %>
+      <section class="settings__section flex flex-column gap-half">
+        <header>
+          <h2 class="divider">Provider</h2>
+        </header>
         <div class="record-form__toggle">
           <div class="record-form__toggle-text">
             <%= form.label :enabled, "Switch AI on", class: "record-form__label" %>
@@ -29,27 +32,63 @@
         </div>
 
         <%= form.label :provider, "Provider", class: "record-form__label" %>
-        <%= form.select :provider, providers.map { |key, info| [ info[:name], key ] }, { include_blank: "Choose…" }, class: "input input--select" %>
+        <%= form.select :provider, providers.map { |key, info| [ info[:name], key ] }, { include_blank: "Choose…" }, class: "input input--select", data: { action: "change->form#submit" } %>
 
         <%= form.label :api_key, "API key", class: "record-form__label" %>
         <%= secret_field form, :api_key, placeholder: @setting.api_key.present? ? "Saved; paste a new one to replace it" : "From your provider’s console" %>
 
-        <span class="record-form__hint">OpenCode Zen: paste your Zen key, and name models as Zen lists them (claude-sonnet-5, gpt-5.5, kimi-k2…); Runwell reaches each family the way Zen serves it. The main and fast models can be from different families.</span>
+        <% if @setting.provider.in?(%w[ollama openai opencode]) %>
+          <%= form.label :api_base, "Address (your own server, or a compatible one; leave blank otherwise)", class: "record-form__label" %>
+          <%= form.url_field :api_base, class: "input full-width", placeholder: providers.dig(@setting.provider, :base) || "https://api.openai.com/v1", autocomplete: "off" %>
+        <% end %>
+      </section>
 
-        <%= form.label :api_base, "Address (Ollama, or a compatible server; leave blank otherwise)", class: "record-form__label" %>
-        <%= form.url_field :api_base, class: "input full-width", placeholder: providers.dig("ollama", :base), autocomplete: "off" %>
+      <section class="settings__section flex flex-column gap-half" id="models">
+        <header>
+          <h2 class="divider">Models</h2>
+        </header>
+        <span class="record-form__hint">The main model answers the Ask panel and most suggestions; the fast one does small jobs, like summing up the day. With OpenCode Zen they can be from different families: Runwell reaches each the way Zen serves it.</span>
+        <turbo-frame id="ai_models" class="flex flex-column gap-half">
+          <% choices = @setting.model_choices %>
+          <% grouped = @setting.grouped_model_choices %>
+          <% if @setting.provider.blank? %>
+            <span class="txt-subtle">Choose a provider first, and its models show here.</span>
+          <% else %>
+            <div class="flex gap-half flex-wrap">
+              <div class="flex flex-column gap-half flex-item-grow">
+                <%= form.label :model, "Model", class: "record-form__label" %>
+                <% if choices.any? %>
+                  <% options = grouped ? grouped_options_for_select(grouped, @setting.model.to_s.delete_prefix("opencode/")) : options_for_select(choices, @setting.model.to_s.delete_prefix("opencode/")) %>
+                  <%= form.select :model, options, { include_blank: "Recommended (#{providers.dig(@setting.provider, :model)})" }, class: "input input--select full-width" %>
+                <% else %>
+                  <%= form.text_field :model, class: "input full-width", autocomplete: "off", placeholder: providers.dig(@setting.provider, :model) %>
+                <% end %>
+              </div>
+              <div class="flex flex-column gap-half flex-item-grow">
+                <%= form.label :fast_model, "Fast model, for small jobs", class: "record-form__label" %>
+                <% if choices.any? %>
+                  <% options = grouped ? grouped_options_for_select(grouped, @setting.fast_model.to_s.delete_prefix("opencode/")) : options_for_select(choices, @setting.fast_model.to_s.delete_prefix("opencode/")) %>
+                  <%= form.select :fast_model, options, { include_blank: @setting.model.present? ? "Same as the model" : "Recommended (#{providers.dig(@setting.provider, :fast)})" }, class: "input input--select full-width" %>
+                <% else %>
+                  <%= form.text_field :fast_model, class: "input full-width", autocomplete: "off", placeholder: providers.dig(@setting.provider, :fast) %>
+                <% end %>
+              </div>
+            </div>
+            <% if @setting.models_loading? %>
+              <span class="txt-x-small txt-subtle" data-controller="poll" data-poll-interval-value="2">Fetching <%= @setting.provider_short_name %>’s models…</span>
+            <% elsif @setting.models_error.present? %>
+              <span class="txt-x-small txt-negative">Couldn’t list <%= @setting.provider_short_name %>’s models (<%= @setting.models_error %>), so type a model as the provider names it.</span>
+            <% elsif choices.any? %>
+              <span class="txt-x-small txt-subtle"><%= pluralize(choices.size, "model") %> from <%= @setting.provider_short_name %>. A model a provider lists may still be unavailable: Test the connection after choosing.</span>
+            <% end %>
+          <% end %>
+        </turbo-frame>
+      </section>
 
-        <div class="flex gap-half flex-wrap">
-          <div class="flex flex-column gap-half flex-item-grow">
-            <%= form.label :model, "Model", class: "record-form__label" %>
-            <%= form.text_field :model, class: "input full-width", autocomplete: "off", placeholder: (@setting.provider && providers.dig(@setting.provider, :model)) || "The provider’s recommended" %>
-          </div>
-          <div class="flex flex-column gap-half flex-item-grow">
-            <%= form.label :fast_model, "Fast model, for small jobs", class: "record-form__label" %>
-            <%= form.text_field :fast_model, class: "input full-width", autocomplete: "off", placeholder: (@setting.provider && providers.dig(@setting.provider, :fast)) || "The provider’s recommended" %>
-          </div>
-        </div>
-
+      <section class="settings__section flex flex-column gap-half">
+        <header>
+          <h2 class="divider"><%= term(:client, count: 2) %></h2>
+        </header>
         <div class="record-form__toggle">
           <div class="record-form__toggle-text">
             <%= form.label :portal, "Let #{term(:client, count: 2).downcase} ask too", class: "record-form__label" %>
@@ -60,18 +99,27 @@
             <span class="switch__btn"></span>
           </label>
         </div>
+      </section>
 
+      <section class="settings__section flex flex-column gap-half">
+        <header>
+          <h2 class="divider">Budget</h2>
+        </header>
         <%= form.label :monthly_budget_cents, "Monthly budget (optional)", class: "record-form__label" %>
         <%= money_field form, :monthly_budget_cents, class: "input", placeholder: "No limit" %>
         <span class="record-form__hint">When this month’s spend reaches it, AI pauses until next month.</span>
+      </section>
 
-        <div><button type="submit" class="btn btn--link txt-small">Save</button></div>
-      <% end %>
-    </section>
+      <div><button type="submit" class="btn btn--link txt-small">Save</button></div>
+    <% end %>
 
     <section class="settings__section flex flex-column gap-half" id="test">
-      <div class="flex align-start gap-half">
+      <header>
+        <h2 class="divider">Check</h2>
+      </header>
+      <div class="flex align-start gap-half flex-wrap">
         <%= button_to "Test the connection", settings_ai_test_path, class: "btn txt-small", disabled: !@setting.ready? %>
+        <%= button_to "Refresh the models", settings_ai_models_path, class: "btn txt-small", disabled: @setting.provider.blank? %>
         <turbo-frame id="ai_test" class="txt-small flex flex-column gap-half">
           <% test = @setting.last_test || {} %>
           <% if test["results"].present? %>
@@ -90,9 +138,7 @@
         </turbo-frame>
       </div>
     </section>
-  </div>
 
-  <div class="settings__panel panel shadow txt-align-start">
     <section class="settings__section flex flex-column gap-half">
       <header>
         <h2 class="divider">This month</h2>
