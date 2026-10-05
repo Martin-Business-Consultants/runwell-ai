@@ -59,7 +59,7 @@ class AiSetting < ApplicationRecord
     RubyLLM.context do |config|
       case provider
       when "anthropic" then config.anthropic_api_key = api_key
-      when "openai" then config.openapi_key = api_key
+      when "openai" then config.openai_api_key = api_key
       when "gemini" then config.gemini_api_key = api_key
       when "openrouter" then config.openrouter_api_key = api_key
       when "ollama"
@@ -68,12 +68,12 @@ class AiSetting < ApplicationRecord
       end
       if provider == "opencode"
         base = (api_base.presence || PROVIDERS.dig("opencode", :base)).chomp("/")
-        config.openapi_key = config.anthropic_api_key = config.gemini_api_key = api_key
-        config.openapi_base = base
+        config.openai_api_key = config.anthropic_api_key = config.gemini_api_key = api_key
+        config.openai_api_base = base
         config.gemini_api_base = base
         config.anthropic_api_base = base.delete_suffix("/v1")
       end
-      config.openapi_base = api_base if provider == "openai" && api_base.present?
+      config.openai_api_base = api_base if provider == "openai" && api_base.present?
       config.request_timeout = 120
       config.logger = Rails.logger
     end
