@@ -1,5 +1,5 @@
-# Per-request memos for the AI plugin (the core's Current is the core's): the settings row and
-# whether the month's budget is spent, asked by every card on a page.
+# What the AI works out once a request: its settings row, whether this month's budget is spent, and
+# the clients kept out of it. Every card on a page asks.
 class Ai::Current < ActiveSupport::CurrentAttributes
-  attribute :settings, :over_budget
+  attribute :setting, :over_budget, :excluded_client_ids
 end

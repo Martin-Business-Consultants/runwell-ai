@@ -1,0 +1,18 @@
+<%# locals: (client:) %>
+<%# A client's sidebar: the week ahead with them, and the switch that keeps them out of AI. %>
+<% if Ai.ready? && !client.internal? %>
+  <section class="settings__section flex flex-column gap-half">
+    <% if Ai.available_for?(client) %>
+      <%= render "ai/suggestions/card", kind: "client_week", subject: client, suggestion: AiSuggestion.latest("client_week", client, Current.user) %>
+    <% end %>
+    <% if Ai.excluded?(client) %>
+      <%= button_to ai_client_exclusion_path(client), method: :delete, class: "btn btn--plain txt-small" do %>
+        <%= icon_tag "ai" %> <span>Kept out of AI: let it back</span>
+      <% end %>
+    <% else %>
+      <%= button_to ai_client_exclusion_path(client), class: "btn btn--plain txt-small txt-subtle" do %>
+        <%= icon_tag "ai" %> <span>Keep out of AI</span>
+      <% end %>
+    <% end %>
+  </section>
+<% end %>

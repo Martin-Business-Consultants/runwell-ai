@@ -1,18 +1,20 @@
-# Keep a client out of AI, or let it back in (Ai::Exclusion). Owners only, in the browser.
-class Ai::ExclusionsController < ApplicationController
-  require_permission :manage_settings
-  before_action { head :not_found unless Runwell::Plugins.enabled?(:ai) }
-  agent_exempt :create, :destroy, reason: "whether a client is kept out of AI is a person's call"
+# Keeping a client out of AI (the switch in its sidebar): no assistant and no suggestions on its
+# records. A person's call, never an agent's, so a token's request is refused.
+class Ai::ExclusionsController < Ai::BaseController
+  allow_staff
+  agent_exempt :create, reason: "keeping a client out of AI is a person's call"
+  agent_exempt :destroy, reason: "keeping a client out of AI is a person's call"
+  before_action { head :forbidden if Current.agent? }
 
   def create
     client = Client.find(params[:client_id])
-    Ai::Exclusion.find_or_create_by!(client: client)
+    AiExclusion.find_or_create_by!(client: client) { it.user = Current.user }
     redirect_back fallback_location: client, notice: "#{client.name} is kept out of AI."
   end
 
   def destroy
     client = Client.find(params[:client_id])
-    Ai::Exclusion.where(client: client).destroy_all
-    redirect_back fallback_location: client, notice: "AI can help with #{client.name} again."
+    AiExclusion.where(client: client).destroy_all
+    redirect_back fallback_location: client, notice: "AI works on #{client.name} again."
   end
 end

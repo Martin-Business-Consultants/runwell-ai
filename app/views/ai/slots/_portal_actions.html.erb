@@ -1,6 +1,6 @@
-<%# locals: () %>
-<%# The client portal's header (the core's :portal_actions slot): Ask, when clients may. %>
-<% if Ai.portal_available_for?(current_contact) %>
+<%# locals: (contact:) %>
+<%# The portal's header: the contact's Ask button, while the owner lets clients ask. %>
+<% if Ai.portal_available_for?(contact) %>
   <div class="display-contents" data-controller="dialog" data-action="keydown.esc->dialog#close:stop">
     <button type="button" class="btn btn--plain txt-small" data-action="dialog#toggle"><%= icon_tag "ai" %> <span>Ask</span></button>
     <dialog class="ai-panel panel shadow" data-dialog-target="dialog" aria-label="Ask">

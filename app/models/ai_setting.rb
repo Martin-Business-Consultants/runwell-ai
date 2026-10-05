@@ -1,10 +1,8 @@
-# Settings > AI: the install's own AI, through RubyLLM. The owner picks a provider and pastes its
-# key (encrypted), or points at their own Ollama; nothing is sent anywhere until it's switched on.
-# A monthly budget, in cents, stops new requests once spent (Ai.over_budget?). One row, the
-# plugin's own (ai_settings), filled once from Runwell 2.16–2.17's own settings when installed.
-class Ai::Settings < ApplicationRecord
-  self.table_name = "ai_settings"
-
+# Settings > Plugins > AI, one row: the install's own AI, through RubyLLM. The owner picks a
+# provider and pastes its key (encrypted), or points at their own Ollama; nothing is sent anywhere
+# until it's switched on. A monthly budget, in cents, stops new requests once spent
+# (Ai.over_budget?).
+class AiSetting < ApplicationRecord
   PROVIDERS = {
     "anthropic" => { name: "Anthropic (Claude)", model: "claude-sonnet-5", fast: "claude-haiku-4-5", key: true },
     "openai" => { name: "OpenAI", model: "gpt-5.6", fast: "gpt-5.4-mini", key: true },
@@ -19,8 +17,8 @@ class Ai::Settings < ApplicationRecord
   validates :monthly_budget_cents, numericality: { greater_than_or_equal_to: 0, only_integer: true }, allow_nil: true
   validate :complete, if: :enabled?
 
-  # The one row (Settings > AI).
-  def self.current = Ai::Current.settings ||= first_or_create!
+  # Read once a request.
+  def self.current = Ai::Current.setting ||= first || create!
 
   # Switched on, with what it needs to reach the provider.
   def ready? = enabled? && provider.present? && (api_key.present? || !PROVIDERS.dig(provider, :key))
@@ -61,7 +59,7 @@ class Ai::Settings < ApplicationRecord
     RubyLLM.context do |config|
       case provider
       when "anthropic" then config.anthropic_api_key = api_key
-      when "openai" then config.openai_api_key = api_key
+      when "openai" then config.openapi_key = api_key
       when "gemini" then config.gemini_api_key = api_key
       when "openrouter" then config.openrouter_api_key = api_key
       when "ollama"
@@ -70,12 +68,12 @@ class Ai::Settings < ApplicationRecord
       end
       if provider == "opencode"
         base = (api_base.presence || PROVIDERS.dig("opencode", :base)).chomp("/")
-        config.openai_api_key = config.anthropic_api_key = config.gemini_api_key = api_key
-        config.openai_api_base = base
+        config.openapi_key = config.anthropic_api_key = config.gemini_api_key = api_key
+        config.openapi_base = base
         config.gemini_api_base = base
         config.anthropic_api_base = base.delete_suffix("/v1")
       end
-      config.openai_api_base = api_base if provider == "openai" && api_base.present?
+      config.openapi_base = api_base if provider == "openai" && api_base.present?
       config.request_timeout = 120
       config.logger = Rails.logger
     end

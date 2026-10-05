@@ -1,7 +1,7 @@
 # A conversation with the in-app AI: one person's, about a record or nothing in particular, for
 # the Ask panel (purpose "ask") or a suggestion on a record ("suggestion", AiSuggestion). RubyLLM's
 # Rails integration (acts_as_chat) keeps its messages, tool calls and usage; Runwell adds whose it
-# is, what it's about, the install's provider (Ai::Settings#context, set as each chat loads) and,
+# is, what it's about, the install's provider (AiSetting#context, set as each chat loads) and,
 # for each reply, fresh instructions and the tools in Ai::Tools.
 #
 # A reply runs in a job (AiReplyJob) while replying_since is set; the panel polls until it's
@@ -30,8 +30,8 @@ class AiChat < ApplicationRecord
 
   # A chat on the install's model (or its fast one), ready to ask.
   def self.start!(user: nil, contact: nil, subject: nil, purpose: "ask", fast: false)
-    setting = Ai.settings
-    raise Ai::Unavailable, "AI isn't set up: Settings > AI." unless Ai.ready?
+    setting = AiSetting.current
+    raise Ai::Unavailable, "AI isn't set up: Settings > Plugins > AI." unless Ai.ready?
 
     model = setting.model_for(fast: fast)
     route = setting.route(model)
@@ -68,7 +68,7 @@ class AiChat < ApplicationRecord
     asks.where(user: user, subject: subject).where(updated_at: 12.hours.ago..).recent.first || start!(user: user, subject: subject)
   end
 
-  # A client contact's ongoing chat in the portal (Settings > AI lets clients ask), or a new one.
+  # A client contact's ongoing chat in the portal (Settings > Plugins > AI lets clients ask), or a new one.
   def self.for_contact(contact)
     asks.where(contact: contact).where(updated_at: 12.hours.ago..).recent.first || start!(contact: contact)
   end
@@ -78,7 +78,7 @@ class AiChat < ApplicationRecord
   # RubyLLM doesn't keep the wire protocol, so it's worked out again from the model (OpenCode Zen
   # reaches some models by chat completions; everything else uses the provider's own).
   def protocol
-    super || (Ai.settings.route(model_id)[:protocol] if Ai.settings.provider == "opencode")
+    super || (AiSetting.current.route(model_id)[:protocol] if AiSetting.current.provider == "opencode")
   end
 
   def replying? = replying_since.present? && replying_since > STUCK_AFTER.ago
@@ -97,7 +97,7 @@ class AiChat < ApplicationRecord
   # the reply written by a job.
   def ask_soon!(text, document_ids: [])
     raise Ai::Unavailable, "AI is off for this #{Setting.current.term(:client).downcase}." if Ai.excluded?(portal? ? contact.client : subject)
-    raise Ai::Unavailable, "This month's AI budget is spent: Settings > AI." if Ai.over_budget?
+    raise Ai::Unavailable, "This month's AI budget is spent: Settings > Plugins > AI." if Ai.over_budget?
     raise Ai::Unavailable, "Approve or decline the change above first." if proposals.any?
 
     files = attachable_documents.select { it.id.to_s.in?(Array(document_ids).map(&:to_s)) }.map(&:file)
@@ -130,7 +130,7 @@ class AiChat < ApplicationRecord
       written_at = Time.current
     end
   rescue Ai::Unavailable, RubyLLM::Error, Faraday::Error, Timeout::Error => error
-    ai_messages.create!(role: "assistant", content: "I couldn’t answer (#{Ai.settings.route_name(model_id)}): #{error.message.truncate(300)}")
+    ai_messages.create!(role: "assistant", content: "I couldn’t answer (#{AiSetting.current.route_name(model_id)}): #{error.message.truncate(300)}")
   ensure
     update_columns(replying_since: nil, updated_at: Time.current)
   end
@@ -147,6 +147,6 @@ class AiChat < ApplicationRecord
   private
     def use_install_provider
       self.assume_model_exists = true
-      self.context = Ai.settings.context if Ai.ready?
+      self.context = AiSetting.current.context if AiSetting.current.ready?
     end
 end

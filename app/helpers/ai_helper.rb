@@ -54,7 +54,7 @@ module AiHelper
     JSON.parse(content)["summary"] rescue nil
   end
 
-  # Questions worth one click on this kind of record (and other plugins' own, Ai::Prompts).
+  # Questions worth one click on this kind of record (and plugins' own, Runwell::Plugins.ai_prompt).
   def ai_prompts(subject, page = nil)
     t = Setting.current
     base =
@@ -76,7 +76,7 @@ module AiHelper
       when Request then [ "What should this become?", "Is this in the agreed scope?", "Draft a reply" ]
       when ScopeItem then [ "Plan the #{t.term(:work).downcase} for this", "What’s left to deliver?" ]
       end
-    base + Ai::Prompts.for(subject)
+    base + Runwell::Plugins.enabled_ai_prompts.filter_map { |_, prompt| prompt.label if prompt.applies_to?(subject) }
   end
 
   # One line of the AI's words, inline (no paragraph): bold, code and record links.

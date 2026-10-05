@@ -1,9 +1,8 @@
 # Suggestions the in-app AI makes on records (Ai::Suggestions): asking for one (made in a job;
 # its card reloads until ready), showing it, and using or dismissing it. Using one applies it with
 # the person's own permissions. Each person's own.
-class Ai::SuggestionsController < ApplicationController
+class Ai::SuggestionsController < Ai::BaseController
   allow_staff
-  before_action { head :not_found unless Runwell::Plugins.enabled?(:ai) }
   agent_exempt :create, :show, :update, reason: "the in-app AI's suggestions; agents use the tools directly over MCP"
 
   def create

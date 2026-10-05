@@ -1,9 +1,9 @@
-# Settings > AI > Test: one short question to each model the install uses (the main one, for the
+# Settings > Plugins > AI > Test: one short question to each model the install uses (the main one, for the
 # Ask panel and most suggestions, and the fast one), through the same path as every chat, with
 # what each said (or why it failed) kept for the page.
 class AiTestJob < ApplicationJob
   def perform
-    setting = Ai.settings
+    setting = AiSetting.current
     owner = User.people.find_by(role: "owner") || User.people.first
     results = [ false, true ].uniq { setting.model_for(fast: it) }.map do |fast|
       model = setting.model_for(fast: fast)

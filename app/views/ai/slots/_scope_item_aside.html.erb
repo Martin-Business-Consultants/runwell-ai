@@ -1,0 +1,7 @@
+<%# locals: (scope_item:) %>
+<%# A scope item's sidebar: the work it needs. %>
+<% if Ai.available_for?(scope_item) %>
+  <section class="settings__section flex flex-column gap-half">
+    <%= render "ai/suggestions/card", kind: "plan_work", subject: scope_item, suggestion: AiSuggestion.latest("plan_work", scope_item, Current.user) %>
+  </section>
+<% end %>

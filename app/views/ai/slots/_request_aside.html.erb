@@ -1,0 +1,7 @@
+<%# locals: (request_record:) %>
+<%# An open request's sidebar, for whoever triages: what it should become. %>
+<% if can?(:triage_requests) && Ai.available_for?(request_record) %>
+  <section class="settings__section flex flex-column gap-half">
+    <%= render "ai/suggestions/card", kind: "triage", subject: request_record, suggestion: AiSuggestion.latest("triage", request_record, Current.user) %>
+  </section>
+<% end %>

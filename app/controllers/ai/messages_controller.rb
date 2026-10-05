@@ -1,8 +1,7 @@
 # The Ask panel's conversation: index is the list of messages (reloaded by the panel while a
 # reply is coming), create asks a question.
-class Ai::MessagesController < ApplicationController
+class Ai::MessagesController < Ai::BaseController
   allow_staff
-  before_action { head :not_found unless Runwell::Plugins.enabled?(:ai) }
   agent_exempt :index, :create, reason: "the in-app AI's own panel; agents use the tools directly over MCP"
 
   before_action :set_chat

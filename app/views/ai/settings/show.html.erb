@@ -1,6 +1,6 @@
 <% @page_title = "AI" %>
 <%= render "settings/header", current: :ai %>
-<% providers = Ai::Settings::PROVIDERS %>
+<% providers = AiSetting::PROVIDERS %>
 
 <section class="settings">
   <div class="settings__panel panel shadow txt-align-start">
@@ -16,7 +16,7 @@
     </section>
 
     <section class="settings__section flex flex-column gap-half">
-      <%= form_with model: @setting, url: settings_ai_path, method: :patch, scope: :settings, class: "flex flex-column gap-half txt-small" do |form| %>
+      <%= form_with model: @setting, url: settings_ai_path, method: :patch, class: "flex flex-column gap-half txt-small" do |form| %>
         <div class="record-form__toggle">
           <div class="record-form__toggle-text">
             <%= form.label :enabled, "Switch AI on", class: "record-form__label" %>
@@ -127,9 +127,25 @@
       <ul class="txt-small margin-none">
         <li>Only what the person using it may see, through the same actions an AI connected over MCP uses.</li>
         <li>Each record it reads, and your question, go to your provider. Choose Ollama to keep everything on your own server.</li>
-        <li>A <%= term(:client).downcase %> switched to “Keep out of AI” (in its page’s sidebar) gets no assistant or suggestions on its records.</li>
+        <li>A <%= term(:client).downcase %> marked “Keep out of AI” (in its sidebar) gets no assistant or suggestions on its records.</li>
         <li>Every change it makes was approved by a person, and shows in history as their agent “via Runwell AI”.</li>
       </ul>
+    </section>
+
+    <section class="settings__section flex flex-column gap-half">
+      <header>
+        <h2 class="divider">Kept out of AI</h2>
+      </header>
+      <% if @excluded.any? %>
+        <ul class="settings__scrollable-list txt-small">
+          <% @excluded.each do |client| %>
+            <%# herb:key client.id %>
+            <li><%= link_to client.name, client, class: "txt-link" %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="txt-small txt-subtle margin-none">No <%= term(:client, count: 2).downcase %>. Keep one out from the switch in its sidebar.</p>
+      <% end %>
     </section>
   </div>
 </section>

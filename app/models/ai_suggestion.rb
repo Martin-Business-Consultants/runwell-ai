@@ -1,7 +1,7 @@
 # Something the in-app AI suggested on a record, in a structured shape a person can use in one
 # click: what a request should become, scope items for an agreement, work for a scope item,
 # promises and tasks in a note, a summary. Made in a job (AiSuggestionJob) through its own AiChat,
-# whose usage says what it cost; accepted or dismissed by the person, so Settings > AI can show
+# whose usage says what it cost; accepted or dismissed by the person, so Settings > Plugins > AI can show
 # which suggestions earn their keep.
 class AiSuggestion < ApplicationRecord
   STATES = %w[working ready failed accepted dismissed].freeze
@@ -31,8 +31,8 @@ class AiSuggestion < ApplicationRecord
     parsed = response.content.is_a?(Hash) ? response.content : JSON.parse(response.content.to_s)
     update!(state: "ready", payload: parsed)
   rescue => error
-    model = ai_chat&.model_id || Ai.settings.model_for(fast: definition.fast)
-    update!(state: "failed", error: "#{Ai.settings.route_name(model)}: #{error.class.name.demodulize}: #{error.message}".truncate(300))
+    model = ai_chat&.model_id || AiSetting.current.model_for(fast: definition.fast)
+    update!(state: "failed", error: "#{AiSetting.current.route_name(model)}: #{error.class.name.demodulize}: #{error.message}".truncate(300))
   end
 
   # The person uses it (with the items they ticked, for a list): applied with their permissions.

@@ -1,4 +1,4 @@
-# The plugin's key is ai, so Runwell requires "ai". Its engine is RunwellAi::Engine, leaving the
-# Ai namespace to the app code (app/models/ai.rb and the rest), which Rails autoloads.
+# The plugin's entry point (its key is ai). The engine lives in RunwellAi, since Ai is the AI's own
+# module in app/models, loaded by Zeitwerk.
 require "runwell_ai/version"
 require "runwell_ai/engine"

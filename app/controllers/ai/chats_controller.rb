@@ -2,9 +2,8 @@
 # show answers the panel for a chat; current finds the person's chat about a record (or starts
 # one); create starts afresh. Chats are each person's own. Agents reach Runwell over MCP, so none
 # of this is an agent tool.
-class Ai::ChatsController < ApplicationController
+class Ai::ChatsController < Ai::BaseController
   allow_staff
-  before_action { head :not_found unless Runwell::Plugins.enabled?(:ai) }
   agent_exempt :current, :show, :create, reason: "the in-app AI's own panel; agents use the tools directly over MCP"
 
   before_action :require_ai
