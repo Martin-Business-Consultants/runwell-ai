@@ -1,5 +1,6 @@
 # A conversation with the in-app AI: one person's, about a record or nothing in particular, for
-# the Ask panel (purpose "ask") or a suggestion on a record ("suggestion", AiSuggestion). RubyLLM's
+# the Ask panel (purpose "ask"), a suggestion on a record ("suggestion", AiSuggestion), or another
+# plugin's structured question (`Ai.structured`, "plugin"). RubyLLM's
 # Rails integration (acts_as_chat) keeps its messages, tool calls and usage; Runwell adds whose it
 # is, what it's about, the install's provider (AiSetting#context, set as each chat loads) and,
 # for each reply, fresh instructions and the tools in Ai::Tools.
@@ -10,7 +11,7 @@
 class AiChat < ApplicationRecord
   acts_as_chat messages: :ai_messages
 
-  PURPOSES = %w[ask suggestion].freeze
+  PURPOSES = %w[ask suggestion plugin].freeze
   SUBJECT_TYPES = %w[Client Engagement Todo Request ScopeItem].freeze
   TOOLS = [ Ai::Tools::Search, Ai::Tools::ReadRecord, Ai::Tools::FindTools, Ai::Tools::RunTool ].freeze
   STUCK_AFTER = 5.minutes

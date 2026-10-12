@@ -155,7 +155,7 @@
             </li>
           <% end %>
         </ul>
-        <p class="txt-x-small txt-subtle margin-none">Ask panel <%= number_to_currency(@by_kind["ask"].to_d, precision: 3) %> · suggestions <%= number_to_currency(@by_kind["suggestion"].to_d, precision: 3) %></p>
+        <p class="txt-x-small txt-subtle margin-none">Ask panel <%= number_to_currency(@by_kind["ask"].to_d, precision: 3) %> · suggestions <%= number_to_currency(@by_kind["suggestion"].to_d, precision: 3) %><% if @by_kind["plugin"] %> · other plugins <%= number_to_currency(@by_kind["plugin"].to_d, precision: 3) %><% end %></p>
       <% else %>
         <p class="txt-small txt-subtle margin-none">Nothing yet.</p>
       <% end %>

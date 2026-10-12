@@ -51,6 +51,10 @@ agent's).
   read tools and `portal_send_request` (the contact approves it first) with the contact's token
   (`Ai.run_portal_tool`); it never decides on an agreement
 - Other plugins add one-click questions with the core's `Runwell::Plugins.ai_prompt key, label, types:`
+- Other plugins ask for a structured answer with `Ai.structured(user:, name:, schema:, instructions:, prompt:, fast:)`
+  (1.2.0): a chat of purpose "plugin", within the budget, returning a Hash. They check
+  `defined?(::Ai) && ::Ai.respond_to?(:structured)` and `Ai.available_for?(record)` first, so they
+  work without this plugin. Keep its signature: removing or changing it waits for 2.0
 
 ## Where it shows
 

@@ -43,6 +43,20 @@ module Ai
       Ai::Current.over_budget = budget.present? && spent * 100 >= budget
     end
 
+    # For other plugins: one structured answer from the install's model, as this person, in the
+    # shape of `schema` (a JSON schema object), counted in the month's spend like any suggestion.
+    # `instructions` set the scene, `prompt` asks; the answer is a Hash. Raises Ai::Unavailable
+    # when AI is off, unset or over budget, and RubyLLM's errors as they come. Call it from a job:
+    # a model can take a minute. Since 1.2.0.
+    def structured(user:, name:, schema:, instructions:, prompt:, fast: false)
+      raise Unavailable, "AI is off, not set up, or over this month's budget: Settings > Plugins > AI." unless ready? && !over_budget?
+
+      chat = AiChat.start!(user: user, purpose: "plugin", fast: fast)
+      chat.save!
+      response = chat.with_instructions(instructions, persist: false).with_schema(schema.merge(name: name)).ask(prompt)
+      response.content.is_a?(Hash) ? response.content : JSON.parse(response.content.to_s)
+    end
+
     # Runs one agent tool as the person, as an agent over MCP would: a token for this call alone,
     # revoked straight after. Answers the tool's JSON.
     def run_tool(user, tool, arguments) = Agent::Dispatch.run_as(user, tool, arguments, name: TOKEN_NAME)
