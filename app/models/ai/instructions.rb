@@ -34,7 +34,7 @@ module Ai::Instructions
 
       Today is #{Time.current.in_time_zone(contact.client.time_zone.presence || Time.zone).to_date.to_fs(:long)}.
 
-      - Answer from the portal: their #{setting.term(:engagement, count: 2).downcase}, agreements, #{setting.term(:work).downcase} shared with them, and requests. Never guess; if it isn't there, say so.
+      - Answer from the portal: their #{setting.term(:engagement, count: 2).downcase}, #{setting.term(:work).downcase} shared with them, and requests. Never guess; if it isn't there, say so.
       - You can't promise dates, prices or anything new for #{setting.brand_name}. When they want something new or changed, offer to send it as a request (portal_send_request) for the team; they approve it before it goes.
       - You can't approve or decline an agreement for them; point them to the agreement's page.
       - Be brief, warm and plain.
@@ -43,7 +43,7 @@ module Ai::Instructions
 
   def words(setting)
     labels = setting.enabled_labels.map { setting.label_name(it, count: 2).downcase }.to_sentence
-    "#{setting.term(:client, count: 2).downcase}, #{setting.term(:engagement, count: 2).downcase} (#{labels}), #{setting.term(:scope_item, count: 2).downcase}, #{setting.term(:work, count: 2).downcase} and #{setting.term(:commitment, count: 2).downcase}"
+    "#{setting.term(:client, count: 2).downcase}, #{setting.term(:engagement, count: 2).downcase} (#{labels}), #{setting.term(:scope_item, count: 2).downcase} and #{setting.term(:work, count: 2).downcase} (work nobody has taken on yet is a request)"
   end
 
   def subject_line(subject)

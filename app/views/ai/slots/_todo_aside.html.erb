@@ -1,0 +1,7 @@
+<%# locals: (todo:) %>
+<%# A request's sidebar (work nobody has taken on yet): who should take it, or whether to delete it. %>
+<% if todo.request? && Ai.available_for?(todo) %>
+  <section class="settings__section flex flex-column gap-half">
+    <%= render "ai/suggestions/card", kind: "triage", subject: todo, suggestion: AiSuggestion.latest("triage", todo, Current.user) %>
+  </section>
+<% end %>

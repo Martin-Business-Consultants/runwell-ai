@@ -1,5 +1,0 @@
-<%# locals: (commitment:) %>
-<%# Each open commitment: a reminder to send. A button until asked. %>
-<% if commitment.open? && Ai.available_for?(commitment) %>
-  <%= render "ai/suggestions/card", kind: "reminder", subject: commitment, row: true %>
-<% end %>

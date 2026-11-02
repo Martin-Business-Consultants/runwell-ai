@@ -48,51 +48,54 @@ module Ai::Suggestions
   def parse_date(value) = (Date.parse(value.to_s) if value.to_s.match?(/\A\d{4}-\d{2}-\d{2}\z/))
 end
 
-Ai::Suggestions.define :triage, label: "Suggest how to triage", types: %w[Request], fast: false,
+# A request is work nobody has taken on yet (Todo#request?): triage is who takes it, or deleting it.
+Ai::Suggestions.define :triage, label: "Suggest who takes it", types: %w[Todo], fast: false,
   schema: Ai::Suggestions.object(
-    become: Ai::Suggestions.choice(%w[new_engagement scope work commitment dismiss]),
-    engagement_ref: Ai::Suggestions.text("For scope, work or a commitment: the engagement's ref, or \"\""),
-    label: Ai::Suggestions.choice(Engagement::LABELS + [ "" ], "For a new engagement: its kind"),
-    owner: Ai::Suggestions.choice(%w[us client], "For a commitment: who promises"),
+    action: Ai::Suggestions.choice(%w[assign delete]),
+    owner_id: { type: [ "integer", "null" ], description: "To assign: who should take it, from the team, or null" },
     due_on: Ai::Suggestions.date,
-    out_of_scope: { type: "boolean", description: "True when it asks for more than the engagement's agreed scope" },
+    out_of_scope: { type: "boolean", description: "True when it asks for more than its engagement's sections cover" },
     reason: Ai::Suggestions.text("One or two sentences: why")
   ),
-  prompt: ->(request, user) {
-    engagements = request.client ? request.client.engagements.includes(:client, agreement_versions: :approval).map { "#{it.ref} #{it.title} (#{it.state})" }.join("; ") : "none: no client yet"
+  prompt: ->(todo, user) {
+    client = todo.client
+    engagements = client ? client.engagements.includes(:client).map { "#{it.ref} #{it.title} (#{it.state})" }.join("; ") : "none: no client yet"
     <<~TEXT
-      Triage this request: should it become a new engagement, scope on an existing engagement's agreement (a change), work on an engagement, a commitment (a dated promise), or be dismissed? Prefer existing engagements when it fits one; say if it's beyond what was agreed.
+      Nobody has taken this request on yet. Suggest who on the team should (by role and how much they have open), and a due date if it needs one; or, if it's spam, a duplicate or nothing we'd do, suggest deleting it. Say if it's beyond what its engagement covers. Today is #{Date.current}.
 
-      The client's engagements: #{engagements}
+      The client's engagements: #{engagements.presence || "none"}
+
+      The team:
+      #{Ai::Suggestions.team(user)}
 
       The request:
-      #{Ai::Suggestions.record_json(request, user)}
+      #{Ai::Suggestions.record_json(todo, user)}
     TEXT
   },
   apply: ->(suggestion, _selection, user) {
-    request = suggestion.subject
-    raise Ai::Suggestions::Refused, "Only people who may triage can use this." unless user.can?(:triage_requests)
+    todo = suggestion.subject or raise(Ai::Suggestions::Refused, "It's gone already.")
+    raise Ai::Suggestions::Refused, "Someone has taken it on already." unless todo.request?
 
     p = suggestion.payload
-    engagement = Ai::Suggestions.engagement_by_ref(p["engagement_ref"], client: request.client)
-    case p["become"]
-    when "new_engagement" then request.promote_to_engagement!(label: p["label"].presence_in(Setting.current.enabled_labels) || Setting.current.enabled_labels.first, actor: user)
-    when "scope" then engagement ? request.promote_to_change!(engagement: engagement, actor: user) : raise(Ai::Suggestions::Refused, "Pick the engagement yourself: #{p["engagement_ref"]} isn't one of theirs.")
-    when "work" then engagement ? request.promote_to_todo!(engagement: engagement, actor: user, due_on: Ai::Suggestions.parse_date(p["due_on"])) : raise(Ai::Suggestions::Refused, "Pick the engagement yourself.")
-    when "commitment" then request.promote_to_commitment!(actor: user, due_on: Ai::Suggestions.parse_date(p["due_on"]) || 1.week.from_now.to_date, owner_kind: p["owner"] == "client" ? "client" : "us", user: (user if p["owner"] != "client"), engagement: engagement)
-    when "dismiss" then request.dismiss!(reason: p["reason"].to_s.truncate(250), actor: user)
+    if p["action"] == "delete"
+      raise Ai::Suggestions::Refused, "Only people who may delete records can delete it." unless user.can?(:delete_records)
+
+      todo.destroy!
+      "Deleted."
+    else
+      owner = User.people.active.find_by(id: p["owner_id"]) or raise(Ai::Suggestions::Refused, "Pick who takes it yourself.")
+      todo.update!(owner: owner, due_on: todo.due_on || Ai::Suggestions.parse_date(p["due_on"]))
+      "Assigned to #{owner.display_name}."
     end
-    "Triaged as suggested."
   }
 
-Ai::Suggestions.define :note_actions, label: "Find promises and work", types: %w[Note], fast: true,
+Ai::Suggestions.define :note_actions, label: "Find work and promises", types: %w[Note], fast: true,
   schema: Ai::Suggestions.object(
-    commitments: Ai::Suggestions.list(Ai::Suggestions.object(owner: Ai::Suggestions.choice(%w[us client]), description: Ai::Suggestions.text("What will be done, starting with a verb"), due_on: Ai::Suggestions.date)),
-    tasks: Ai::Suggestions.list(Ai::Suggestions.object(title: Ai::Suggestions.text, engagement_ref: Ai::Suggestions.text("The engagement it belongs to, or \"\""), due_on: Ai::Suggestions.date))
+    tasks: Ai::Suggestions.list(Ai::Suggestions.object(title: Ai::Suggestions.text("What we'll do, starting with a verb"), engagement_ref: Ai::Suggestions.text("The engagement it belongs to, or \"\""), due_on: Ai::Suggestions.date))
   ),
   prompt: ->(note, user) {
     <<~TEXT
-      Read this note and list what it commits anyone to. Commitments are promises with a date between us and the client ("Rosa will send the logo by Friday": owner client; "we'll share the draft by the 14th": owner us). Tasks are work for us to do. Only what the note says; nothing invented. Today is #{Date.current}.
+      Read this note and list the work it gives us: tasks, and anything we promised with a date ("we'll share the draft by the 14th" is work due on the 14th). Only what the note says; nothing invented, and nothing the client promised. Today is #{Date.current}.
 
       It's on #{note.subject_type} #{note.subject.try(:ref) || note.subject_id}: #{Ai::Suggestions.record_json(note.subject, user).truncate(4_000)}
 
@@ -105,19 +108,13 @@ Ai::Suggestions.define :note_actions, label: "Find promises and work", types: %w
     client = note.subject.is_a?(Client) ? note.subject : note.subject.try(:client)
     engagement = note.subject.is_a?(Engagement) ? note.subject : note.subject.try(:engagement)
     made = 0
-    Array(suggestion.payload["commitments"]).each_with_index do |item, index|
-      next unless selection.include?("commitments-#{index}") && client
-
-      client.commitments.create!(description: item["description"], owner_kind: item["owner"], user: (user if item["owner"] == "us"),
-        due_on: Ai::Suggestions.parse_date(item["due_on"]) || 1.week.from_now.to_date, engagement: engagement, source: "note")
-      made += 1
-    end
     Array(suggestion.payload["tasks"]).each_with_index do |item, index|
       next unless selection.include?("tasks-#{index}")
       target = Ai::Suggestions.engagement_by_ref(item["engagement_ref"], client: client) || engagement
-      next unless target
+      next unless target || client
 
-      target.todos.create!(title: item["title"], due_on: Ai::Suggestions.parse_date(item["due_on"]), created_by: user)
+      Todo.create!(engagement: target, client: (client unless target), title: item["title"].to_s.truncate(250),
+        due_on: Ai::Suggestions.parse_date(item["due_on"]), created_by: user, source: "note")
       made += 1
     end
     "Added #{made}."
@@ -137,14 +134,14 @@ Ai::Suggestions.define :day, label: "Plan my day", types: %w[User], fast: false,
   },
   apply: nil
 
-Ai::Suggestions.define :scope_draft, label: "Draft the scope", types: %w[Engagement], fast: false,
+Ai::Suggestions.define :scope_draft, label: "Suggest #{Setting.current.term(:scope_item, count: 2).downcase}", types: %w[Engagement], fast: false,
   schema: Ai::Suggestions.object(
-    items: Ai::Suggestions.list(Ai::Suggestions.object(description: Ai::Suggestions.text("One deliverable, as the client will read it"), internal_estimate: Ai::Suggestions.text("Rough effort for us, internal, or \"\"")))
+    items: Ai::Suggestions.list(Ai::Suggestions.object(description: Ai::Suggestions.text("One part of what it delivers, as the client would read it")))
   ),
   prompt: ->(engagement, user) {
-    requests = engagement.client.requests.where(status: "open").limit(10).map { "- #{it.subject}: #{ActionView::Base.full_sanitizer.sanitize(it.body.to_s).truncate(400)}" }.join("\n")
+    requests = engagement.client.todos.requests.where(engagement_id: nil).limit(10).map { "- #{it.title}: #{ActionView::Base.full_sanitizer.sanitize(it.description.to_s).truncate(400)}" }.join("\n")
     <<~TEXT
-      Draft the scope items for this #{Setting.current.label_name(engagement.label).downcase}'s agreement: clear deliverables the client can say yes to, in their words, each one thing. Skip what's already on the draft. Five to ten items at most.
+      Suggest the #{Setting.current.term(:scope_item, count: 2).downcase} of this #{Setting.current.label_name(engagement.label).downcase}: the parts of what it delivers, each one thing, in the client's words, that its work can be grouped under. Skip what it already has. Five to ten at most.
 
       #{Ai::Suggestions.record_json(engagement, user)}
 
@@ -154,35 +151,11 @@ Ai::Suggestions.define :scope_draft, label: "Draft the scope", types: %w[Engagem
   },
   apply: ->(suggestion, selection, user) {
     engagement = suggestion.subject
-    raise Ai::Suggestions::Refused, "This #{Setting.current.term(:engagement).downcase} takes no new scope." if engagement.closed?
+    raise Ai::Suggestions::Refused, "This #{Setting.current.term(:engagement).downcase} is closed." if engagement.closed?
 
-    version = engagement.draft_version || engagement.draft_version!(actor: user)
     picked = Array(suggestion.payload["items"]).each_with_index.select { |_, index| selection.include?("items-#{index}") }
-    picked.each { |item, _| version.scope_items.create!(description: item["description"].to_s.truncate(250), internal_estimate: item["internal_estimate"].presence, price_cents: 0) }
-    "Added #{picked.size} to the draft."
-  }
-
-Ai::Suggestions.define :agreement_check, label: "Check before sending", types: %w[Engagement], fast: false,
-  schema: Ai::Suggestions.object(
-    summary: Ai::Suggestions.text("The summary the client reads: plain, warm, two to four sentences, never internal estimates"),
-    issues: Ai::Suggestions.list(Ai::Suggestions.object(item: Ai::Suggestions.text, problem: Ai::Suggestions.text))
-  ),
-  prompt: ->(engagement, user) {
-    version = engagement.draft_version
-    items = version ? version.scope_items.map { "- #{it.description} (price #{it.price_cents} cents#{", internal estimate #{it.internal_estimate}" if it.internal_estimate.present?})" }.join("\n") : "no draft"
-    <<~TEXT
-      Check this draft agreement before it goes to the client. List real problems only: vague or overlapping items, missing prices where others have them, anything the client couldn't say yes to as written. Then write the summary the client will read; never mention internal estimates.
-
-      #{Setting.current.label_name(engagement.label)} #{engagement.ref}: #{engagement.title}
-      Current summary: #{version&.summary.presence || "none"}
-      Items:
-      #{items}
-    TEXT
-  },
-  apply: ->(suggestion, _selection, _user) {
-    version = suggestion.subject.draft_version or raise(Ai::Suggestions::Refused, "There's no draft any more.")
-    version.update!(summary: suggestion.payload["summary"].to_s.truncate(250))
-    "Summary updated."
+    picked.each { |item, _| engagement.scope_items.create!(description: item["description"].to_s.truncate(250)) }
+    "Added #{picked.size} to #{engagement.ref}."
   }
 
 Ai::Suggestions.define :plan_work, label: "Plan the work", types: %w[ScopeItem], fast: false,
@@ -191,7 +164,7 @@ Ai::Suggestions.define :plan_work, label: "Plan the work", types: %w[ScopeItem],
   ),
   prompt: ->(item, user) {
     <<~TEXT
-      Break this agreed scope item into the work that delivers it: three to eight concrete tasks in order, each with the best owner from the team (by role and how much they have open) and a due date if the engagement suggests one. Today is #{Date.current}.
+      Break this #{Setting.current.term(:scope_item).downcase} into the work that delivers it: three to eight concrete tasks in order, each with the best owner from the team (by role and how much they have open) and a due date if the engagement suggests one. Today is #{Date.current}.
 
       #{Ai::Suggestions.record_json(item, user)}
 
@@ -201,7 +174,7 @@ Ai::Suggestions.define :plan_work, label: "Plan the work", types: %w[ScopeItem],
   },
   apply: ->(suggestion, selection, user) {
     item = suggestion.subject
-    engagement = item.agreement_version.engagement
+    engagement = item.engagement
     picked = Array(suggestion.payload["tasks"]).each_with_index.select { |_, index| selection.include?("tasks-#{index}") }
     picked.each do |task, _|
       engagement.todos.create!(title: task["title"].to_s.truncate(250), scope_item: item, owner: User.people.active.find_by(id: task["owner_id"]),
@@ -210,23 +183,11 @@ Ai::Suggestions.define :plan_work, label: "Plan the work", types: %w[ScopeItem],
     "Added #{picked.size} to #{engagement.ref}."
   }
 
-Ai::Suggestions.define :reminder, label: "Draft a reminder", types: %w[Commitment], fast: true,
-  schema: Ai::Suggestions.object(message: Ai::Suggestions.text("The message to send, ready to paste")),
-  prompt: ->(commitment, _user) {
-    who = commitment.owner_kind == "client" ? "they promised us" : "we promised them"
-    <<~TEXT
-      Write a short, friendly message about this commitment (#{who}), ready to paste into an email or chat. #{commitment.owner_kind == "client" ? "A gentle nudge: what we need, and why it matters now." : "An honest update: where it stands and, if it will slip, the new date to offer."} No subject line, no placeholders. Today is #{Date.current}.
-
-      #{commitment.owner_name} will #{commitment.description}, by #{commitment.due_on}#{" (overdue)" if commitment.overdue?}. #{Setting.current.term(:client)}: #{commitment.client.name}.#{" #{Setting.current.term(:engagement)}: #{commitment.engagement.ref} #{commitment.engagement.title}." if commitment.engagement}
-    TEXT
-  },
-  apply: nil
-
 Ai::Suggestions.define :client_week, label: "Summarise the week", types: %w[Client], fast: false,
   schema: Ai::Suggestions.object(summary: Ai::Suggestions.text("A short update on the past week and what's next, for us or to send them")),
   prompt: ->(client, user) {
     <<~TEXT
-      Summarise the past week with this #{Setting.current.term(:client).downcase} (to #{Date.current}): what moved, what we're waiting on them for, what we've promised, what's next. Five to eight lines, plain, no internal estimates.
+      Summarise the past week with this #{Setting.current.term(:client).downcase} (to #{Date.current}): what moved, what's due or overdue, what's blocked, what's next. Five to eight lines, plain, no internal estimates.
 
       #{Ai::Suggestions.record_json(client, user)}
     TEXT

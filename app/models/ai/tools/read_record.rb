@@ -1,7 +1,7 @@
-# Reads one record in full, as its page shows it: a client (with its contacts, commitments and
-# notes), an engagement (by ref too), a piece of work, a request or a scope item.
+# Reads one record in full, as its page shows it: a client (with its contacts, work and notes), an
+# engagement (by ref too), a piece of work (a request is work nobody has taken on) or a scope item.
 class Ai::Tools::ReadRecord < Ai::Tool
-  TYPES = { "Client" => "show_client", "Engagement" => "show_engagement", "Todo" => "show_work", "Request" => "show_request", "ScopeItem" => "show_scope_item" }.freeze
+  TYPES = { "Client" => "show_client", "Engagement" => "show_engagement", "Todo" => "show_work", "ScopeItem" => "show_scope_item" }.freeze
 
   description "Read one record in full: \"Type:id\" (Client:4, Todo:12), or an engagement by ref (Engagement:P-3). Types: #{TYPES.keys.join(", ")}."
   parameter :record, description: "\"Type:id\", as search and other answers give it"

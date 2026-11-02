@@ -62,7 +62,7 @@ module RunwellAi
 
     config.to_prepare do
       Runwell::Plugins.register :ai, name: "AI", version: RunwellAi::VERSION, author: "Runwell",
-        enabled_by_default: false, requires: ">= 2.18.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-ai",
+        enabled_by_default: false, requires: ">= 3.0.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-ai",
         description: "An assistant inside Runwell (Ask, on any page) and one-click suggestions on records, through your own AI provider's key, with a monthly budget. Works through the same tools as MCP, as the person, and changes nothing until they approve it."
       Runwell::Plugins.settings :ai, "AI", -> { settings_ai_path }
       Runwell::Plugins.stylesheet :ai, "ai/ai"
@@ -70,11 +70,10 @@ module RunwellAi
       Runwell::Plugins.slot :nav_actions, :ai, "ai/slots/nav_actions"
       Runwell::Plugins.slot :home_top, :ai, "ai/slots/home_top"
       Runwell::Plugins.slot :client_aside, :ai, "ai/slots/client_aside"
-      Runwell::Plugins.slot :request_aside, :ai, "ai/slots/request_aside"
+      Runwell::Plugins.slot :todo_aside, :ai, "ai/slots/todo_aside"
       Runwell::Plugins.slot :scope_item_aside, :ai, "ai/slots/scope_item_aside"
-      Runwell::Plugins.slot :draft_version, :ai, "ai/slots/draft_version"
+      Runwell::Plugins.slot :engagement_aside, :ai, "ai/slots/engagement_aside"
       Runwell::Plugins.slot :note_row, :ai, "ai/slots/note_row"
-      Runwell::Plugins.slot :commitment_row, :ai, "ai/slots/commitment_row"
       Runwell::Plugins.slot :portal_actions, :ai, "ai/slots/portal_actions"
     end
   end

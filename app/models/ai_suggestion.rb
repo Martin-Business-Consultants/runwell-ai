@@ -1,5 +1,5 @@
 # Something the in-app AI suggested on a record, in a structured shape a person can use in one
-# click: what a request should become, scope items for an agreement, work for a scope item,
+# click: who should take a request, sections for an engagement, work for a section,
 # promises and tasks in a note, a summary. Made in a job (AiSuggestionJob) through its own AiChat,
 # whose usage says what it cost; accepted or dismissed by the person, so Settings > Plugins > AI can show
 # which suggestions earn their keep.

@@ -5,9 +5,9 @@ AI inside [Runwell](https://github.com/Martin-Business-Consultants/runwellv2), a
 - **Ask**, on every page (<kbd>i</kbd>): a chat about the record on screen that answers from your
   records and does what you ask, as you. It can do only what you can, and shows every change for
   you to approve first.
-- **Suggestions** on records, one click each: what a request should become, the scope of a draft
-  and a check before it's sent, the work a scope item needs, promises in a note, a reminder for a
-  commitment, the week with a client, the day ahead.
+- **Suggestions** on records, one click each: who should take a request on (or whether to delete
+  it), the scope of a draft and a check before it's sent, the work a scope item needs, the work and
+  promises in a note, the week with a client, the day ahead.
 - **Your clients can ask too**, from their portal, if you let them: it sees only what their portal
   shows, can send a request for your team (they approve it first), and never decides on an
   agreement.
@@ -18,7 +18,7 @@ until it's switched on, and any client can be kept out of it.
 
 ## Install
 
-In Runwell (2.18 or later), Settings › Plugins › AI › Install, then switch it on and set it up in
+In Runwell (3.0 or later; plugin 1.2.0 for Runwell 2.18 to 2.x), Settings › Plugins › AI › Install, then switch it on and set it up in
 its settings. From a shell: `bin/rails "plugins:install[ai]"`.
 
 An install that had AI before Runwell 2.18, when it was part of the core, gets this plugin

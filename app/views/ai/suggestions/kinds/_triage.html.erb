@@ -1,13 +1,21 @@
 <%# locals: (suggestion:, frame_id:) %>
 <% p = suggestion.payload %>
-<% become = { "new_engagement" => "A new #{term(:engagement).downcase} (#{label_term(p["label"].presence || "work_order").downcase})", "scope" => "Scope on #{p["engagement_ref"]}", "work" => "#{term(:work)} on #{p["engagement_ref"]}", "commitment" => "A #{term(:commitment).downcase} (#{p["owner"] == "client" ? "theirs" : "ours"})", "dismiss" => "Dismiss it" }[p["become"]] %>
-<p class="margin-none"><strong><%= become %></strong><% if p["due_on"].present? %> · by <%= l(Date.parse(p["due_on"]), format: :long) rescue p["due_on"] %><% end %></p>
+<% owner = User.people.active.find_by(id: p["owner_id"]) if p["action"] == "assign" %>
+<p class="margin-none">
+  <% if p["action"] == "delete" %>
+    <strong>Delete it</strong>
+  <% elsif owner %>
+    <strong>Assign it to <%= owner.display_name %></strong><% if p["due_on"].present? %> · by <%= l(Date.parse(p["due_on"]), format: :long) rescue p["due_on"] %><% end %>
+  <% else %>
+    <strong>Assign it</strong> <span class="txt-subtle">(no one on the team fits)</span>
+  <% end %>
+</p>
 <p class="txt-small txt-subtle margin-none"><%= p["reason"] %></p>
 <% if p["out_of_scope"] %>
-  <p class="txt-small margin-none"><span class="status-tag status-tag--waiting">Beyond the agreed scope</span></p>
+  <p class="txt-small margin-none"><span class="status-tag status-tag--waiting">Beyond what its engagement covers</span></p>
 <% end %>
 <div class="flex gap-half">
-  <% if can?(:triage_requests) %>
+  <% if (p["action"] == "delete" && can?(:delete_records)) || owner %>
     <%= button_to "Do this", ai_suggestion_path(suggestion), method: :patch, params: { decision: "accept" }, class: "btn btn--link txt-small", form: { data: { turbo_frame: "_top" } } %>
   <% end %>
   <%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>

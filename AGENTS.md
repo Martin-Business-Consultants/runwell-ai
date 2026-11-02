@@ -36,9 +36,10 @@ agent's).
 - `Ai::Instructions` is rebuilt each reply (unpersisted): the person, today, the install's words, the
   record on screen, and the rules (facts from tools only, records as "Type:id" which `ai_text`
   links, one proposed change at a time, care with anything reaching a client)
-- Suggestions on records (`AiSuggestion`, kinds in `Ai::Suggestions`: triage on a request, promises
-  and work in a note, the day on home, draft scope and a pre-send check on a draft, work for a scope
-  item, a reminder for a commitment, the week for a client): a strict JSON schema answered in a job
+- Suggestions on records (`AiSuggestion`, kinds in `Ai::Suggestions`: triage on a request (who takes
+  it, or delete it: a request is work nobody has taken on, `Todo#request?`), work and promises in a
+  note (as work, on the note's engagement or straight on its client), the day on home, draft scope
+  and a pre-send check on a draft, work for a scope item, the week for a client): a strict JSON schema answered in a job
   (`AiSuggestionJob`) through its own `AiChat` (purpose "suggestion"), shown by
   `ai/suggestions/_card` (in a list, `row: true` starts as just its button: no lookup per row), and
   applied with the person's permissions through the models' verbs. Settings › Plugins › AI counts
@@ -54,14 +55,14 @@ agent's).
 - Other plugins ask for a structured answer with `Ai.structured(user:, name:, schema:, instructions:, prompt:, fast:)`
   (1.2.0): a chat of purpose "plugin", within the budget, returning a Hash. They check
   `defined?(::Ai) && ::Ai.respond_to?(:structured)` and `Ai.available_for?(record)` first, so they
-  work without this plugin. Keep its signature: removing or changing it waits for 2.0
+  work without this plugin. Keep its signature: removing or changing it waits for 3.0
 
 ## Where it shows
 
 Every placement is a slot partial in `app/views/ai/slots`, each checking `Ai.available_for?`
 (switched on, within budget, the client not kept out): `nav_actions` (Ask), `home_top` (the day),
-`client_aside` (the week, and the keep-out switch), `request_aside` (triage), `scope_item_aside`
-(plan the work), `draft_version` (draft scope, check before sending), `note_row`, `commitment_row`,
+`client_aside` (the week, and the keep-out switch), `todo_aside` (triage, on requests only),
+`scope_item_aside` (plan the work), `engagement_aside` (suggest sections), `note_row`,
 and `portal_actions` (the portal's Ask). What a page works out once (the settings row, the budget,
 the kept-out clients) is in `Ai::Current`, so a list of rows costs no queries per row.
 

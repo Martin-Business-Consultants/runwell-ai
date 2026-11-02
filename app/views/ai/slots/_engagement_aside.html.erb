@@ -1,0 +1,7 @@
+<%# locals: (engagement:) %>
+<%# An engagement's sidebar: sections it could have, drafted from what the client asked for. %>
+<% if !engagement.closed? && Ai.available_for?(engagement) %>
+  <section class="settings__section flex flex-column gap-half ai-suggestions">
+    <%= render "ai/suggestions/card", kind: "scope_draft", subject: engagement, suggestion: AiSuggestion.latest("scope_draft", engagement, Current.user) %>
+  </section>
+<% end %>
