@@ -1,0 +1,57 @@
+<% @page_title = @run.label %>
+<% task = @run.task %>
+<%= parent_page "AI queue", ai_queue_path %>
+<%= ai_section_nav %>
+<% actions = (button_to("Stop the run", ai_queue_run_cancellation_path(@run), class: "ui-button", data: { variant: "outline", size: "sm" }) if @run.running? && can?(:queue_agent_work)) %>
+<%= ui :page_header, title: @page_title, actions: actions do %>
+  <p class="ai-queue__line">
+    <%= ai_queue_badge @run.status %>
+    <%= link_to task.title, task_path(task) %>
+    <span class="ai-queue__meta"><%= ai_queue_place(task) %></span>
+  </p>
+<% end %>
+
+<div class="ai-queue ai-queue--split">
+  <div class="ai-queue">
+    <%= ui :card do %>
+      <dl class="ai-queue__facts">
+        <dt>Claimed by</dt><dd><%= @run.claimed_by&.display_name || "—" %> on <%= @run.runner %>, attempt <%= @run.attempt %></dd>
+        <dt>Started</dt><dd><%= l @run.started_at, format: :short %> (<%= time_ago_in_words(@run.started_at) %> ago)</dd>
+        <% if @run.running? %>
+          <dt>Lease</dt><dd>until <%= l @run.lease_expires_at, format: :short %>; last heard from <%= @run.heartbeat_at ? time_ago_in_words(@run.heartbeat_at) + " ago" : "never" %></dd>
+          <dt>Deadline</dt><dd><%= l @run.deadline, format: :short %></dd>
+        <% else %>
+          <dt>Ended</dt><dd><%= l @run.finished_at, format: :short %>, after <%= distance_of_time_in_words(@run.duration) %></dd>
+        <% end %>
+        <% if @run.branch %>
+          <dt>Branch</dt><dd><code><%= @run.branch %></code></dd>
+        <% end %>
+        <% if @run.pull_request_url %>
+          <dt>Pull request</dt><dd><%= link_to @run.pull_request_url, @run.pull_request_url, target: "_blank", rel: "noopener" %></dd>
+        <% end %>
+        <% if @run.log_url %>
+          <dt>Log</dt><dd><%= link_to "Open the log", @run.log_url, target: "_blank", rel: "noopener" %></dd>
+        <% end %>
+        <dt>Cost</dt><dd><%= money @run.cost_cents %><% if @run.input_tokens.positive? %> · <%= number_with_delimiter @run.input_tokens %> tokens in, <%= number_with_delimiter @run.output_tokens %> out<% end %></dd>
+      </dl>
+    <% end %>
+
+    <% if @run.summary.present? %>
+      <%= ui :card, title: tag.h2("What the agent said", class: "ai-queue__title") do %>
+        <p class="ai-queue__text"><%= @run.summary %></p>
+      <% end %>
+    <% end %>
+    <% if @run.error.present? && @run.error != @run.summary %>
+      <%= ui :alert, variant: :destructive, description: @run.error %>
+    <% end %>
+  </div>
+
+  <div class="ai-queue">
+    <%= ui :card, title: tag.h2("All runs on this #{term(:task).downcase}", class: "ai-queue__title") do %>
+      <ul class="ai-queue__list">
+        <%= render partial: "ai/queue/runs/row", collection: task.ai_queue_runs.recent, as: :run %>
+      </ul>
+    <% end %>
+    <%= render "events/timeline", subject: task %>
+  </div>
+</div>

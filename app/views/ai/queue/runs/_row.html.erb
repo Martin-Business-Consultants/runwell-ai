@@ -1,0 +1,17 @@
+<%# locals: (run:, with_task: nil) %>
+<%# One run in a list: what it worked on (when the list spans tasks), where and how it went. %>
+<li class="ai-queue__row">
+  <%= link_to ai_queue_run_path(run), class: "ai-queue__grow" do %>
+    <% if with_task %>
+      <strong><%= run.task.title %></strong>
+      <span class="ai-queue__meta"><%= [ ai_queue_place(run.task), ai_queue_run_details(run) ].compact_blank.join(" · ") %></span>
+    <% else %>
+      <strong><%= run.label %></strong>
+      <span class="ai-queue__meta"><%= ai_queue_run_details(run) %></span>
+    <% end %>
+  <% end %>
+  <% if run.pull_request_url %>
+    <%= link_to "Pull request", run.pull_request_url, class: "ui-button", data: { variant: "outline", size: "sm" }, target: "_blank", rel: "noopener" %>
+  <% end %>
+  <%= ai_queue_badge run.status %>
+</li>

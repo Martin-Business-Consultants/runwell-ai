@@ -1,0 +1,69 @@
+<%# locals: (task:) %>
+<%# The AI queue on a task's sidebar: mark it ready for AI (a person, here; never an agent), watch
+    its run, see past attempts. Shown once it's marked, or while the person may mark it and the
+    queue has somewhere to work (the Code plugin). %>
+<% item = task.ai_queue_item %>
+<% may_mark = can?(:queue_agent_work) && Ai::Queue.on? && !task.intake? && Ai::Queue.code %>
+<% if item || may_mark %>
+  <% runs = task.ai_queue_runs.recent.to_a %>
+  <% readiness = Ai::Queue::Readiness.new(task) %>
+  <%= ui :card, class: "ai-aside", title: tag.h2("AI queue", class: "ai-aside__title") do %>
+    <% if item %>
+      <p class="ai-queue__line">
+        <%= ai_queue_badge item.state %>
+        <span class="ai-queue__meta">
+          <% case item.state %>
+          <% when "queued" %>
+            Marked by <%= item.queued_by&.display_name || "someone" %>; waiting for the next free runner.
+          <% when "running" %>
+            <%= item.current_run.runner %> is working on it, until <%= l item.current_run.deadline, format: :short %> at the latest.
+          <% when "review" %>
+            An agent finished. Check the work, then mark it done.
+          <% when "failed" %>
+            Every attempt failed. Read the last run, fix what it needed, then mark it ready again.
+          <% when "blocked" %>
+            <%= item.problems.to_sentence %>
+          <% when "done" %>
+            Done.
+          <% end %>
+        </span>
+      </p>
+      <% if item.instructions.present? %>
+        <p class="ai-queue__text"><strong>Instructions:</strong> <%= item.instructions %></p>
+      <% end %>
+      <% if can?(:queue_agent_work) %>
+        <div class="ai-queue__buttons">
+          <% if item.current_run %>
+            <%= button_to "Stop the run", ai_queue_run_cancellation_path(item.current_run), class: "ui-button", data: { variant: "outline", size: "sm" } %>
+          <% end %>
+          <% if item.state.in?(%w[failed blocked]) && readiness.ready? %>
+            <%= button_to "Mark ready again", ai_queue_task_item_path(task), class: "ui-button", data: { size: "sm" } %>
+          <% end %>
+          <%= button_to "Take it back", ai_queue_task_item_path(task), method: :delete, class: "ui-button", data: { variant: "ghost", size: "sm" } %>
+        </div>
+      <% end %>
+    <% elsif readiness.ready? %>
+      <%= form_with url: ai_queue_task_item_path(task), scope: :item, namespace: dom_id(task, :ai_queue), class: "ai-queue__form" do |form| %>
+        <%= form.ui :textarea, :instructions, placeholder: "Anything the agent should know (optional)", rows: 2 %>
+        <%= ui :button, type: :submit, size: :sm, content: "Mark ready for AI" %>
+      <% end %>
+      <p class="ai-queue__meta">A runner takes it next, opens a pull request and puts it in review for you.</p>
+    <% else %>
+      <div class="ai-queue__meta">
+        Not ready for AI yet:
+        <ul class="ai-queue__problems">
+          <% readiness.problems.each do |problem| %>
+            <%# herb:key problem %>
+            <li><%= problem %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <% if runs.any? %>
+      <ul class="ai-queue__list">
+        <%= render partial: "ai/queue/runs/row", collection: runs, as: :run %>
+      </ul>
+    <% end %>
+  <% end %>
+<% end %>

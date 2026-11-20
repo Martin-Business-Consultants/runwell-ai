@@ -1,0 +1,13 @@
+<%# locals: (work:) %>
+<%# For the client: shared tasks an agent from the AI queue is working on right now. Titles only,
+    nothing internal, and only what this contact sees. %>
+<% tasks = Ai::Queue::Run.running.where(task_id: current_contact.portal_tasks.where(work: work).select(:id)).includes(:task).map(&:task).uniq %>
+<% if tasks.any? %>
+  <h2 class="ai-portal__title">Being built now</h2>
+  <ul class="ai-portal__list">
+    <% tasks.each do |task| %>
+      <%# herb:key task.id %>
+      <li><%= ui :badge, variant: :info, content: "In progress" %> <%= task.title %></li>
+    <% end %>
+  </ul>
+<% end %>
