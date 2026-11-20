@@ -1,12 +1,11 @@
 <%# locals: (contact:) %>
-<%# The portal's header: the contact's Ask button, while the owner lets clients ask. %>
+<%# The portal's header: the contact's Ask button, while the owner lets clients ask. It opens a
+    drawer at the right of the window (ui :drawer) holding their chat. %>
 <% if Ai.portal_available_for?(contact) %>
-  <div class="display-contents" data-controller="dialog" data-action="keydown.esc->dialog#close:stop">
-    <button type="button" class="btn btn--plain txt-small" data-action="dialog#toggle"><%= icon_tag "ai" %> <span>Ask</span></button>
-    <dialog class="ai-panel panel shadow" data-dialog-target="dialog" aria-label="Ask">
-      <turbo-frame id="ai_panel" src="<%= portal_current_ai_chat_path %>" loading="lazy">
-        <p class="txt-small txt-subtle pad">Loading…</p>
-      </turbo-frame>
-    </dialog>
-  </div>
+  <% trigger = ui(:button, variant: :ghost, size: :sm, content: safe_join([ icon_tag("ai"), tag.span("Ask") ])) %>
+  <%= ui :drawer, id: "ai_drawer", trigger: trigger, title: "Ask", class: "ai-drawer" do %>
+    <turbo-frame id="ai_panel" src="<%= portal_current_ai_chat_path %>" loading="lazy" class="ai-drawer__frame">
+      <%= ui :skeleton, class: "ai-drawer__loading" %>
+    </turbo-frame>
+  <% end %>
 <% end %>

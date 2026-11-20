@@ -1,7 +1,7 @@
 <%# locals: (suggestion:, frame_id:) %>
 <div class="ai-message"><%= ai_text(suggestion.payload["summary"]) %></div>
-<div class="flex gap-half">
-  <%= button_to "Save as a note", ai_suggestion_path(suggestion), method: :patch, params: { decision: "accept" }, class: "btn btn--link txt-small", form: { data: { turbo_frame: "_top" } } %>
-  <button type="button" class="btn txt-small" data-controller="copy-to-clipboard" data-copy-to-clipboard-content-value="<%= suggestion.payload["summary"] %>" data-copy-to-clipboard-success-class="btn--reversed" data-action="copy-to-clipboard#copy">Copy</button>
+<div class="ai-suggestion__actions">
+  <%= button_to "Save as a note", ai_suggestion_path(suggestion), method: :patch, params: { decision: "accept" }, class: "ui-button", data: { variant: "default", size: "sm" }, form: { data: { turbo_frame: "_top" } } %>
+  <%= ui :button, variant: :outline, size: :sm, content: "Copy", data: { controller: "copy-to-clipboard", copy_to_clipboard_content_value: suggestion.payload["summary"].to_s, action: "copy-to-clipboard#copy", runeui_toast: { title: "Copied" }.to_json } %>
   <%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>
 </div>

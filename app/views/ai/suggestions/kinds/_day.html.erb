@@ -2,12 +2,14 @@
 <div class="ai-message"><%= ai_text(suggestion.payload["summary"]) %></div>
 <% priorities = Array(suggestion.payload["priorities"]) %>
 <% if priorities.any? %>
-  <ol class="ai-suggestion__priorities txt-small">
+  <ol class="ai-suggestion__priorities">
     <% priorities.each_with_index do |item, index| %>
       <%# herb:key index %>
-      <li><strong><%= item["what"] %></strong> <span class="txt-subtle"><%= ai_line("#{item["record"]} · #{item["why"]}") %></span></li>
+      <li><strong><%= item["what"] %></strong> <span class="ai-suggestion__meta"><%= ai_line("#{item["record"]} · #{item["why"]}") %></span></li>
     <% end %>
   </ol>
 <% end %>
-<p class="txt-x-small txt-subtle margin-none">Written <%= time_ago_in_words(suggestion.updated_at) %> ago.</p>
-<%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>
+<p class="ai-suggestion__meta">Written <%= time_ago_in_words(suggestion.updated_at) %> ago.</p>
+<div class="ai-suggestion__actions">
+  <%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>
+</div>

@@ -68,11 +68,10 @@ module RunwellAi
       Runwell::Plugins.stylesheet :ai, "ai/ai"
       Runwell::Plugins.shortcut :ai, "i", "Ask AI about what’s on screen"
       Runwell::Plugins.slot :nav_actions, :ai, "ai/slots/nav_actions"
-      Runwell::Plugins.slot :home_top, :ai, "ai/slots/home_top"
       Runwell::Plugins.slot :client_aside, :ai, "ai/slots/client_aside"
-      Runwell::Plugins.slot :todo_aside, :ai, "ai/slots/todo_aside"
+      Runwell::Plugins.slot :task_aside, :ai, "ai/slots/task_aside"
       Runwell::Plugins.slot :scope_item_aside, :ai, "ai/slots/scope_item_aside"
-      Runwell::Plugins.slot :engagement_aside, :ai, "ai/slots/engagement_aside"
+      Runwell::Plugins.slot :work_aside, :ai, "ai/slots/work_aside"
       Runwell::Plugins.slot :note_row, :ai, "ai/slots/note_row"
       Runwell::Plugins.slot :portal_actions, :ai, "ai/slots/portal_actions"
     end

@@ -1,0 +1,7 @@
+<%# locals: (work:) %>
+<%# A piece of work's sidebar: sections it could have, from what it is and what its client asked for. %>
+<% if !work.closed? && Ai.available_for?(work) %>
+  <%= ui :card, class: "ai-aside", title: tag.h2("AI", class: "ai-aside__title") do %>
+    <%= render "ai/suggestions/card", kind: "sections", subject: work, suggestion: AiSuggestion.latest("sections", work, Current.user) %>
+  <% end %>
+<% end %>

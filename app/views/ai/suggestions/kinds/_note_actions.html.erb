@@ -1,16 +1,19 @@
 <%# locals: (suggestion:, frame_id:) %>
 <% tasks = Array(suggestion.payload["tasks"]) %>
 <% if tasks.empty? %>
-  <p class="txt-small txt-subtle margin-none">No <%= term(:work, count: 2).downcase %> or promises in this note.</p>
-  <%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>
+  <p class="ai-suggestion__meta">No <%= term(:task, count: 2).downcase %> or promises in this note.</p>
 <% else %>
-  <%= form_with url: ai_suggestion_path(suggestion), method: :patch, class: "flex flex-column gap-half txt-small", data: { turbo_frame: "_top" } do %>
+  <%= form_with url: ai_suggestion_path(suggestion), method: :patch, class: "ai-suggestion__form", data: { turbo_frame: "_top" } do %>
     <% tasks.each_with_index do |item, index| %>
       <%# herb:key "t#{index}" %>
-      <label class="ai-suggestion__pick"><%= check_box_tag "items[]", "tasks-#{index}", true, id: nil %> <span><%= term(:work) %>: <%= item["title"] %><% if item["engagement_ref"].present? %> · <%= item["engagement_ref"] %><% end %><% if item["due_on"].present? %> · by <%= item["due_on"] %><% end %></span></label>
+      <% ref = item["work_ref"].presence || item["engagement_ref"] %>
+      <%= ui :checkbox, name: "items[]", value: "tasks-#{index}", checked: true, id: "#{frame_id}_#{index}",
+            label: [ item["title"], ref.presence, ("by #{item["due_on"]}" if item["due_on"].present?) ].compact.join(" · ") %>
     <% end %>
     <input type="hidden" name="decision" value="accept">
-    <div><button type="submit" class="btn btn--link txt-small">Add the ticked ones</button></div>
+    <div class="ai-suggestion__actions">
+      <%= ui :button, type: :submit, size: :sm, content: "Add the ticked ones" %>
+    </div>
   <% end %>
-  <%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>
 <% end %>
+<div class="ai-suggestion__actions"><%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %></div>
