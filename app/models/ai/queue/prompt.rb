@@ -16,16 +16,33 @@ class Ai::Queue::Prompt
   private
     def item = run.item
 
+    # The branch the runner checks each repository out on: what the run's JSON hands it
+    # (Workspace#branch_for, a branch already recorded for the task first), so the prompt and the
+    # clone commands always agree. Several repositories on different branches are named each.
     def branch
       code = Ai::Queue.code
-      code::Branch.name_for(run.task) if code && code::Branch.respond_to?(:name_for)
+      return unless code
+
+      if defined?(code::Workspace)
+        workspace = code::Workspace.new(run.task)
+        names = workspace.repositories.map { |repository| [ repository, workspace.branch_for(repository) ] }
+        return names.first.last if names.map(&:last).uniq.one?
+        return names.map { |repository, name| "`#{name}` in #{repository.respond_to?(:name) ? repository.name : "repository #{repository.id}"}" }.join(", ").then { "(#{it})" } if names.any?
+      end
+      code::Branch.name_for(run.task) if code::Branch.respond_to?(:name_for)
+    end
+
+    def branch_phrase
+      name = branch
+      return "" unless name
+      name.start_with?("(") ? ", each on its branch #{name}" : ", on the branch `#{name}`"
     end
 
     def preamble
       <<~MD.strip
         # Unattended run #{run.id} on #{run.runner}
 
-        You are working alone, in a fresh container, on one piece of client work. Nobody is watching to answer questions. The repositories are already cloned in the current directory#{branch ? ", on the branch `#{branch}`" : ""}. You have #{Ai::Queue::Policy.current.run_time_limit_minutes} minutes. You have no Runwell access here: skip the brief's "Working with Runwell" commands, because the runner reports for you.
+        You are working alone, in a fresh container, on one piece of client work. Nobody is watching to answer questions. The repositories are already cloned in the current directory#{branch_phrase}. You have #{Ai::Queue::Policy.current.run_time_limit_minutes} minutes. You have no Runwell access here: skip the brief's "Working with Runwell" commands, because the runner reports for you.
 
         Do the work described in the brief, and only that:
         1. Read the brief and the section it belongs to. Look at the code and its conventions (README, AGENTS.md or CLAUDE.md) before changing anything.
