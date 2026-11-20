@@ -1,0 +1,25 @@
+<%# locals: (work:) %>
+<%# The AI queue across a piece of work's tasks: how many are with agents, and marking the rest
+    that could be ready for AI (a person, here; never an agent). %>
+<% items = Ai::Queue::Item.where(work: work).includes(:runs, :queued_by, task: { work: :client }).to_a %>
+<% may_mark = can?(:queue_agent_work) && Ai::Queue.on? && !work.closed? && Ai::Queue.code %>
+<% marked = items.map(&:task_id) %>
+<% ready = may_mark ? work.tasks.open.where.not(id: marked).select { Ai::Queue::Readiness.new(it).ready? } : [] %>
+<% if items.any? || ready.any? %>
+  <%= ui :card, class: "ai-aside", title: tag.h2("AI queue", class: "ai-aside__title") do %>
+    <% if items.any? %>
+      <p class="ai-queue__line">
+        <% items.group_by(&:state).sort_by { |state, _| Ai::Queue::Item::STATES.index(state) }.each do |state, group| %>
+          <%# herb:key state %>
+          <span><%= ai_queue_badge state %> <%= group.size %></span>
+        <% end %>
+      </p>
+    <% end %>
+    <% if ready.any? %>
+      <%= button_to ai_queue_work_items_path(work), class: "ui-button", data: { variant: "outline", size: "sm" } do %>
+        <span>Mark <%= pluralize(ready.size, term(:task).downcase) %> ready for AI</span>
+      <% end %>
+    <% end %>
+    <%= link_to "Open the AI queue", ai_queue_path %>
+  <% end %>
+<% end %>

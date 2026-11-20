@@ -1,0 +1,93 @@
+<% @page_title = "AI queue" %>
+<%= ai_section_nav %>
+<% running = @items.fetch("running", []) %>
+<% attention = %w[failed blocked review].flat_map { @items.fetch(it, []) } %>
+<% actions = (link_to("Limits and runners", settings_ai_queue_path, class: "ui-button", data: { variant: "outline", size: "sm" }) if can?(:manage_settings)) %>
+<%= ui :page_header, title: @page_title, actions: actions,
+      description: "#{term(:task, count: 2)} someone on the team marked ready for AI, for agents running unattended on your runners. A person marks each one; agents never do." %>
+
+<div class="ai-queue">
+  <% unless Ai::Queue.on? %>
+    <%= ui :alert, variant: :destructive, title: "The queue is stopped", description: "AI is switched off (Settings › Plugins › AI), so runners can’t claim anything, and running runs stop at their next check-in." %>
+  <% end %>
+
+  <%= ui :card do %>
+    <p class="ai-queue__totals">
+      <span><strong><%= running.size %></strong> of <%= @policy.max_concurrent_runs %> runs going · <strong><%= @queue.size %></strong> ready for AI</span>
+      <span>
+        <%= money(@policy.spent_this_month_cents) %> this month<% if @policy.monthly_budget_cents %> of <%= money(@policy.monthly_budget_cents) %><% end %>
+        <% if @policy.over_budget? %><%= ui :badge, variant: :destructive, content: "Budget used up" %><% end %>
+      </span>
+    </p>
+  <% end %>
+
+  <% if running.empty? && @queue.empty? && attention.empty? && @recent.empty? %>
+    <%= ui :card, title: tag.h2("Nothing has been handed to agents yet", class: "ai-queue__title") do %>
+      <ol class="ai-queue__steps">
+        <li>Link a repository to a <%= term(:client).downcase %>, <%= term(:work).downcase %> or <%= term(:task).downcase %> (Code plugin).</li>
+        <li>On a <%= term(:task).downcase %> in an open <%= term(:work).downcase %>, choose <strong>Mark ready for AI</strong> in its sidebar, or mark all of a <%= term(:work).downcase %>’s from its page.</li>
+        <li>Start a runner on a machine with Docker (<%= link_to "Settings › AI › Queue", settings_ai_queue_path %> shows how). It claims the next one, opens a pull request and puts the <%= term(:task).downcase %> in review for you.</li>
+      </ol>
+    <% end %>
+  <% end %>
+
+  <% if running.any? %>
+    <%= ui :card, title: tag.h2("Running", class: "ai-queue__title"), description: pluralize(running.size, "run") do %>
+      <ul class="ai-queue__list">
+        <%= render partial: "ai/queue/runs/row", collection: running.map(&:current_run), as: :run, locals: { with_task: true } %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <% if @queue.any? %>
+    <%= ui :card, title: tag.h2("Ready for AI", class: "ai-queue__title"), description: "In the order runners take them: earliest due first, then the longest waiting." do %>
+      <ol class="ai-queue__list">
+        <% @queue.each do |item| %>
+          <%# herb:key item.id %>
+          <li class="ai-queue__row">
+            <%= link_to task_path(item.task), class: "ai-queue__grow" do %>
+              <strong><%= item.task.title %></strong>
+              <span class="ai-queue__meta"><%= [ ai_queue_place(item.task), (item.task.due_on && "due " + l(item.task.due_on, format: :short)), (item.attempts.positive? && "attempt #{item.attempts + 1}") ].select(&:present?).join(" · ") %></span>
+            <% end %>
+            <%= person_tag item.queued_by %>
+          </li>
+        <% end %>
+      </ol>
+    <% end %>
+  <% end %>
+
+  <% if attention.any? %>
+    <%= ui :card, title: tag.h2("Needs a person", class: "ai-queue__title"), description: pluralize(attention.size, term(:task).downcase) do %>
+      <ul class="ai-queue__list">
+        <% attention.each do |item| %>
+          <%# herb:key item.id %>
+          <li class="ai-queue__row">
+            <%= link_to task_path(item.task), class: "ai-queue__grow" do %>
+              <strong><%= item.task.title %></strong>
+              <span class="ai-queue__meta">
+                <%= ai_queue_place(item.task) %> ·
+                <% case item.state %>
+                <% when "failed" %>
+                  every attempt failed<%= ": " + item.last_run.error.to_s.truncate(90) if item.last_run&.error.present? %>
+                <% when "review" %>
+                  an agent finished; check it and mark it done
+                <% when "blocked" %>
+                  <%= item.problems.first.to_s.downcase_first %>
+                <% end %>
+              </span>
+            <% end %>
+            <%= ai_queue_badge item.state %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <% if @recent.any? %>
+    <%= ui :card, title: tag.h2("Recent runs", class: "ai-queue__title") do %>
+      <ul class="ai-queue__list">
+        <%= render partial: "ai/queue/runs/row", collection: @recent, as: :run, locals: { with_task: true } %>
+      </ul>
+    <% end %>
+  <% end %>
+</div>

@@ -1,0 +1,60 @@
+<% @page_title = "AI queue" %>
+<%= render "settings/header", current: :ai %>
+
+<div class="ai-settings">
+  <p class="ai-settings__hint"><%= link_to "AI", settings_ai_path %> › Queue: limits for agents running unattended on your runners.</p>
+
+  <% unless Ai::Queue.on? %>
+    <%= ui :alert, variant: :destructive, title: "The queue is stopped", description: "AI is switched off, so runners can’t claim anything. Switch it on in Settings › Plugins › AI." %>
+  <% end %>
+
+  <%= form_with model: @policy, url: settings_ai_queue_path, method: :patch, scope: :policy, class: "ai-settings__form" do |form| %>
+    <%= ui :card, title: tag.h2("Limits", class: "ai-settings__title") do %>
+      <div class="ai-settings__pair">
+        <%= form.ui :field, :max_concurrent_runs, label: "Runs at once" do %>
+          <%= form.ui :input, :max_concurrent_runs, type: :number, min: 1, max: 50 %>
+        <% end %>
+        <%= form.ui :field, :run_time_limit_minutes, label: "Minutes a run may take" do %>
+          <%= form.ui :input, :run_time_limit_minutes, type: :number, min: 5, max: 720 %>
+        <% end %>
+        <%= form.ui :field, :max_attempts, label: "Attempts before a person looks" do %>
+          <%= form.ui :input, :max_attempts, type: :number, min: 1, max: 10 %>
+        <% end %>
+        <%= form.ui :field, :lease_minutes, label: "Minutes without a heartbeat before a run is abandoned" do %>
+          <%= form.ui :input, :lease_minutes, type: :number, min: 2, max: 120 %>
+        <% end %>
+      </div>
+      <%= form.ui :field, :monthly_budget_cents, label: "Monthly budget for runs (optional)", description: "Spent this month: #{money @policy.spent_this_month_cents}. Runners report each run’s cost; once the budget is used up, no new runs start. Apart from the Ask panel’s budget: runners use their own keys." do %>
+        <%= money_field form, :monthly_budget_cents, placeholder: "No limit" %>
+      <% end %>
+    <% end %>
+
+    <%= ui :card, title: tag.h2("Never give agent work for", class: "ai-settings__title"), description: "A #{term(:client).downcase} kept out of AI (the switch in its sidebar) never gets agent work either." do %>
+      <%= hidden_field_tag "policy[blocked_client_ids][]", "" %>
+      <ul class="ai-settings__list">
+        <% @clients.each do |client| %>
+          <%# herb:key client.id %>
+          <li>
+            <label class="ai-settings__person">
+              <%= check_box_tag "policy[blocked_client_ids][]", client.id, !@policy.client_allowed?(client), id: dom_id(client, :ai_queue_blocked) %>
+              <span><%= client.name %></span>
+            </label>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <div><%= ui :button, type: :submit, content: "Save" %></div>
+  <% end %>
+
+  <%= ui :card, title: tag.h2("Runners", class: "ai-settings__title") do %>
+    <p class="ai-settings__text">A runner is a small program on a machine with Docker. It claims the next <%= term(:task).downcase %> someone marked ready for AI, starts a fresh container, clones the repositories, runs Claude Code on it, and reports back. The work lands in review for a person; runners never merge, and never mark anything ready.</p>
+    <ol class="ai-settings__bullets">
+      <li>Make a personal token in <%= link_to "Settings › Connected apps", settings_connected_apps_path %> for someone allowed to run the queue (owners and managers). Runs are recorded as their agent.</li>
+      <li>Build the runner and the agent image from <code>runner/</code> in the <%= link_to "AI plugin’s repository", "https://github.com/Martin-Business-Consultants/runwell-ai/tree/main/runner", target: "_blank", rel: "noopener" %> (its README has the details).</li>
+      <li>Start it with the token, an Anthropic API key and a GitHub token that can push branches and open pull requests:</li>
+    </ol>
+    <%= code_block "export RUNWELL_URL=#{request.base_url}\nexport RUNWELL_TOKEN=…   ANTHROPIC_API_KEY=…   GH_TOKEN=…\nrunwell-runner --name build-1" %>
+    <p class="ai-settings__hint">Give the GitHub token access to branches only, not to merge or change settings. Stop a runner with Ctrl-C: it finishes reporting first.</p>
+  <% end %>
+</div>

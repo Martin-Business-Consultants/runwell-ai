@@ -134,6 +134,10 @@
     </ul>
   <% end %>
 
+  <%= ui :card, title: tag.h2("Queue for agents", class: "ai-settings__title"), description: "Agents running unattended on your own runners take the #{term(:task, count: 2).downcase} someone on the team marked ready for AI. Switch AI off and the queue stops." do %>
+    <div><%= link_to "Limits, budget and runners", settings_ai_queue_path, class: "ui-button", data: { variant: "outline", size: "sm" } %></div>
+  <% end %>
+
   <%= ui :card, title: tag.h2("Kept out of AI", class: "ai-settings__title") do %>
     <% if @excluded.any? %>
       <ul class="ai-settings__list">
