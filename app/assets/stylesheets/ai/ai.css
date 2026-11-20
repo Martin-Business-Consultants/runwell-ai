@@ -1,195 +1,88 @@
-/* The in-app AI's Ask panel: a column at the right of the window, beside the page rather than
-/* over it (a non-modal dialog), full height on a desk and a sheet from the bottom on a phone. */
-@layer components {
-  .ai-panel[open] {
-    block-size: calc(100dvh - 1rem);
-    border: 1px solid var(--color-ink-lighter);
-    border-radius: calc(0.75rem * var(--radius-scale, 1));
-    display: flex;
-    inline-size: min(26rem, calc(100vw - 1rem));
-    inset: 0.5rem 0.5rem 0.5rem auto;
-    margin: 0;
-    max-block-size: none;
-    padding: 0;
-    position: fixed;
-    z-index: var(--z-tray);
+/* tokens: runeui */
+/* Linked on every page while the plugin is on (Runwell::Plugins.stylesheet). runeui's tokens only
+/* (shadcn's names and --ui-*, plus the core's --faint-foreground and --brand-tint;
+/* docs/theming.md in Runwell), so themes reach it. */
 
-    > turbo-frame { display: flex; flex: 1; min-block-size: 0; }
+/* The Ask panel: a drawer at the right of the window (ui :drawer), its chat filling it. */
+.ai-drawer [data-slot="drawer-body"] { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 0; }
+.ai-drawer__frame { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.ai-drawer__loading { height: 6rem; margin: 1rem; }
 
-    @media (max-width: 639px) {
-      block-size: 80dvh;
-      inline-size: calc(100vw - 1rem);
-      inset: auto 0.5rem 0.5rem;
-    }
-  }
+.ai-chat { display: flex; flex: 1; flex-direction: column; gap: .75rem; min-height: 0; padding: 0 1rem 1rem; }
+.ai-chat__header { display: flex; align-items: center; gap: .5rem; }
+.ai-chat__header form { display: contents; }
+.ai-chat__title { flex: 1; min-width: 0; margin: 0; overflow: hidden; font-size: var(--ui-text-sm); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.ai-chat__messages { display: flex; flex: 1; flex-direction: column; gap: .75rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.ai-chat__note { margin: 0; color: var(--muted-foreground); font-size: var(--ui-text-xs); }
 
-  .ai-chat {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: var(--block-space-half);
-    min-block-size: 0;
-    padding: var(--block-space) var(--inline-space-double);
-  }
+/* One-click questions: a stack of full-width rows, each as tall as its words. */
+.ai-chat__prompts { display: flex; flex-direction: column; gap: .5rem; }
+.ai-chat__prompts form { display: contents; }
+.ui-button.ai-chat__prompt { justify-content: flex-start; width: 100%; height: auto; min-height: var(--ui-h-sm); padding-block: .4rem; line-height: 1.35; text-align: start; white-space: normal; }
 
-  .ai-chat__header {
-    align-items: center;
-    display: flex;
-    gap: var(--inline-space-half);
+.ai-chat__form { display: flex; align-items: flex-end; gap: .5rem; }
+.ai-chat__compose { display: flex; flex: 1; flex-direction: column; gap: .5rem; min-width: 0; }
+.ai-chat__input { max-height: 10lh; min-height: 2lh; }
+.ai-chat__documents [data-slot="collapsible-content"] { display: flex; flex-direction: column; gap: .35rem; padding-top: .35rem; font-size: var(--ui-text-xs); }
 
-    form { display: contents; }
-  }
+.ai-message { font-size: var(--ui-text-sm); line-height: 1.5; }
+.ai-message p, .ai-message ul { margin: 0 0 .5em; }
+.ai-message p:last-child, .ai-message ul:last-child { margin-bottom: 0; }
+.ai-message ul { padding-inline-start: 1.2em; }
+.ai-message code { font-family: var(--font-mono); font-size: .92em; }
+.ai-message--user { align-self: flex-end; max-width: 85%; padding: .5em .8em; border-radius: var(--ui-radius-xl); background: var(--brand-tint); white-space: pre-wrap; }
+.ai-message__files { display: block; margin-top: .25em; color: var(--muted-foreground); font-size: var(--ui-text-xs); }
 
-  .ai-chat__title {
-    flex: 1;
-    font-size: var(--text-normal);
-    font-weight: 600;
-    margin: 0;
-    min-inline-size: 0;
-  }
+.ai-activity { margin: 0; color: var(--muted-foreground); font-size: var(--ui-text-xs); }
+.ai-activity::before { content: "· "; }
+.ai-activity--working { animation: ai-pulse 1.2s ease-in-out infinite; }
+@keyframes ai-pulse { 50% { opacity: .45; } }
 
-  .ai-chat__messages {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: var(--block-space-half);
-    min-block-size: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
+/* A change the AI proposes: what it is, its fields, and Approve or Decline. */
+.ai-proposal { display: flex; flex-direction: column; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--border); border-inline-start: 3px solid var(--primary); border-radius: var(--ui-radius-lg); font-size: var(--ui-text-sm); }
+.ai-proposal form { display: contents; }
+.ai-proposal__title { display: flex; align-items: center; gap: .35rem; margin: 0; }
+.ai-proposal__details { display: grid; grid-template-columns: max-content 1fr; gap: .15em .75rem; margin: 0; font-size: var(--ui-text-xs); }
+.ai-proposal__details dt { color: var(--muted-foreground); }
+.ai-proposal__details dd { margin: 0; overflow-wrap: anywhere; }
+.ai-proposal__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ai-proposal__state { display: flex; align-items: center; gap: .35rem; margin: 0; color: var(--muted-foreground); font-size: var(--ui-text-xs); }
+.ai-proposal__state--done { color: var(--foreground); }
 
-  .ai-message {
-    font-size: var(--text-small);
-    line-height: 1.5;
-
-    p, ul { margin: 0 0 0.5em; }
-    p:last-child, ul:last-child { margin-block-end: 0; }
-    ul { padding-inline-start: 1.2em; }
-    code { font-family: var(--font-mono); font-size: 0.92em; }
-  }
-
-  .ai-message--user {
-    align-self: flex-end;
-    background: var(--color-selected);
-    border-radius: calc(0.75rem * var(--radius-scale, 1));
-    max-inline-size: 85%;
-    padding: 0.5em 0.8em;
-    white-space: pre-wrap;
-  }
-
-  .ai-activity {
-    color: var(--color-ink-dark);
-    font-size: var(--text-x-small);
-    margin: 0;
-
-    &::before { content: "· "; }
-  }
-
-  .ai-activity--working { animation: ai-pulse 1.2s ease-in-out infinite; }
-
-  @keyframes ai-pulse { 50% { opacity: 0.45; } }
-
-  .ai-proposal {
-    border: 1px solid var(--color-ink-lighter);
-    border-inline-start: 3px solid var(--color-link);
-    border-radius: calc(0.5rem * var(--radius-scale, 1));
-    display: flex;
-    flex-direction: column;
-    gap: var(--block-space-half);
-    font-size: var(--text-small);
-    padding: var(--block-space-half) var(--inline-space);
-
-    form { display: contents; }
-  }
-
-  .ai-proposal__title { margin: 0; }
-
-  .ai-proposal__details {
-    display: grid;
-    font-size: var(--text-x-small);
-    gap: 0.15em var(--inline-space);
-    grid-template-columns: max-content 1fr;
-    margin: 0;
-
-    dt { color: var(--color-ink-dark); }
-    dd { margin: 0; overflow-wrap: anywhere; }
-  }
-
-  /* One-click questions: a stack of full-width rows, each as tall as its words. */
-  .ai-chat__prompts {
-    display: flex;
-    flex-direction: column;
-    gap: var(--block-space-half);
-
-    form { display: contents; }
-  }
-
-  .btn.ai-chat__prompt {
-    block-size: auto;
-    inline-size: 100%;
-    justify-content: flex-start;
-    line-height: 1.35;
-    min-block-size: var(--btn-size);
-    padding-block: 0.5em;
-    text-align: start;
-    white-space: normal;
-  }
-
-  .ai-chat__form {
-    align-items: flex-end;
-    display: flex;
-    gap: var(--inline-space-half);
-  }
-
-  .input.ai-chat__input {
-    field-sizing: content;
-    max-block-size: 10lh;
-    min-block-size: 2lh;
-  }
-}
+/* A record's sidebar card (ui :card) holding a suggestion, and the keep-out switch. */
+.ai-aside__title { margin: 0; font: inherit; }
+.ai-aside > [data-slot="card-content"] { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; min-width: 0; }
+.ai-aside__button { display: flex; }
 
 /* A suggestion on a record: its button, then what it suggested, ready to use. */
-@layer components {
-  .ai-suggestion {
-    display: block;
+.ai-suggestion { display: block; width: 100%; }
+.ai-suggestion form.button_to { display: inline-flex; }
+.ai-suggestion__body { display: flex; flex-direction: column; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--border); border-inline-start: 3px solid var(--primary); border-radius: var(--ui-radius-lg); font-size: var(--ui-text-sm); }
+.ai-suggestion__body p { margin: 0; }
+.ai-suggestion__headline { margin: 0; }
+.ai-suggestion__meta { color: var(--muted-foreground); font-size: var(--ui-text-xs); }
+.ai-suggestion__form { display: flex; flex-direction: column; gap: .5rem; }
+.ai-suggestion__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.ai-suggestion__actions form { display: contents; }
+.ai-suggestion__priorities { display: flex; flex-direction: column; gap: .25em; margin: 0; padding-inline-start: 1.25em; }
+.ai-suggestion__priorities p { display: inline; margin: 0; }
 
-    form.button_to { display: inline; }
-  }
+/* Your day: the day's suggestion on a page of its own. */
+.ai-day { display: flex; flex-direction: column; gap: 1rem; max-width: 48rem; }
 
-  .ai-suggestion__body {
-    border: 1px solid var(--color-ink-lighter);
-    border-inline-start: 3px solid var(--color-link);
-    border-radius: calc(0.5rem * var(--radius-scale, 1));
-    display: flex;
-    flex-direction: column;
-    gap: var(--block-space-half);
-    padding: var(--block-space-half) var(--inline-space);
-  }
-
-  .ai-suggestion__pick {
-    align-items: baseline;
-    display: flex;
-    gap: var(--inline-space-half);
-  }
-
-  .ai-suggestion__priorities {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25em;
-    margin: 0;
-    padding-inline-start: 1.25em;
-
-    p { display: inline; margin: 0; }
-  }
-
-  .ai-suggestion__message {
-    font-family: var(--font-sans);
-    white-space: normal;
-  }
-}
-
-@layer components {
-  .ai-chat__compose { display: flex; flex: 1; flex-direction: column; gap: 0.35em; min-inline-size: 0; }
-  .ai-chat__documents { display: flex; flex-direction: column; gap: 0.25em; }
-  .ai-message__files { color: var(--color-ink-dark); display: block; font-size: var(--text-x-small); margin-block-start: 0.25em; }
-}
+/* Settings › Plugins › AI: its sections as cards down the page. */
+.ai-settings, .ai-settings__form { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+.ai-settings [data-slot="card-content"] { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.ai-settings__title { margin: 0; font: inherit; }
+.ai-settings__text { margin: 0; line-height: 1.5; }
+.ai-settings__stack { display: flex; flex-direction: column; gap: .5rem; }
+.ai-settings__pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.ai-settings__row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.ai-settings__row form { display: contents; }
+.ai-settings__hint { display: flex; align-items: center; gap: .35rem; margin: 0; color: var(--muted-foreground); font-size: var(--ui-text-xs); }
+.ai-settings__result { display: flex; align-items: center; gap: .35rem; margin: 0; font-size: var(--ui-text-sm); }
+.ai-settings__spent { margin: 0; }
+.ai-settings__list { display: flex; flex-direction: column; gap: .5rem; max-height: 16rem; margin: 0; padding: 0; overflow-y: auto; list-style: none; font-size: var(--ui-text-sm); }
+.ai-settings__person { display: flex; align-items: center; gap: .5rem; }
+.ai-settings__grow { flex: 1; min-width: 0; }
+.ai-settings__bullets { display: flex; flex-direction: column; gap: .35rem; margin: 0; padding-inline-start: 1.25em; font-size: var(--ui-text-sm); }

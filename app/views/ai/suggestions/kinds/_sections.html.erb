@@ -1,0 +1,13 @@
+<%# locals: (suggestion:, frame_id:) %>
+<% items = Array(suggestion.payload["items"]) %>
+<%= form_with url: ai_suggestion_path(suggestion), method: :patch, class: "ai-suggestion__form", data: { turbo_frame: "_top" } do %>
+  <% items.each_with_index do |item, index| %>
+    <%# herb:key index %>
+    <%= ui :checkbox, name: "items[]", value: "items-#{index}", checked: true, id: "#{frame_id}_#{index}", label: item["description"] %>
+  <% end %>
+  <input type="hidden" name="decision" value="accept">
+  <div class="ai-suggestion__actions">
+    <%= ui :button, type: :submit, size: :sm, content: "Add the ticked ones" %>
+  </div>
+<% end %>
+<div class="ai-suggestion__actions"><%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %></div>

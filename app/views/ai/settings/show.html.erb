@@ -2,196 +2,148 @@
 <%= render "settings/header", current: :ai %>
 <% providers = AiSetting::PROVIDERS %>
 
-<section class="settings">
-  <div class="settings__panel panel shadow txt-align-start">
-    <section class="settings__section flex flex-column gap-half">
-      <header>
-        <h2 class="divider">AI in Runwell</h2>
-      </header>
-      <p class="txt-small txt-subtle margin-none">
-        An assistant on every page (<kbd>i</kbd>) that answers from your records and does what you ask, as you: it can do only what you can, and shows every change for you to approve first.
-        It also suggests on records: who should take a request, the sections of an engagement, the <%= term(:work).downcase %> a <%= term(:scope_item).downcase %> needs, promises in a note, the day ahead.
-        It uses your own account with an AI provider; nothing is sent anywhere until it’s on. For coding, use an AI on your own computer connected over MCP (Settings › Connected apps).
-      </p>
-    </section>
+<div class="ai-settings">
+  <%= ui :card, title: tag.h2("AI in Runwell", class: "ai-settings__title"), description: "It uses your own account with an AI provider; nothing is sent anywhere until it’s on. For coding, use an AI on your own computer connected over MCP (Settings › Connected apps)." do %>
+    <p class="ai-settings__text">
+      An assistant on every page (<%= ui :kbd, content: "i" %>) that answers from your records and does what you ask, as you: it can do only what you can, and shows every change for you to approve first.
+      It also suggests on records: who should take on what came in, the <%= term(:scope_item, count: 2).downcase %> of <%= term(:work, count: 2).downcase %>, the <%= term(:task, count: 2).downcase %> a <%= term(:scope_item).downcase %> needs, promises in a note, the week with a <%= term(:client).downcase %>, and your day (Your day, in the sidebar).
+    </p>
+  <% end %>
 
-    <%= form_with model: @setting, url: settings_ai_path, method: :patch, class: "flex flex-column gap txt-small", data: { controller: "form" } do |form| %>
-      <section class="settings__section flex flex-column gap-half">
-        <header>
-          <h2 class="divider">Provider</h2>
-        </header>
-        <div class="record-form__toggle">
-          <div class="record-form__toggle-text">
-            <%= form.label :enabled, "Switch AI on", class: "record-form__label" %>
-            <span class="record-form__hint">For everyone on the team. Turn it off and the assistant and suggestions disappear; chats stay.</span>
-          </div>
-          <label class="switch flex-item-no-shrink">
-            <%= form.check_box :enabled, class: "switch__input" %>
-            <span class="switch__btn"></span>
-          </label>
-        </div>
+  <%= form_with model: @setting, url: settings_ai_path, method: :patch, class: "ai-settings__form", data: { controller: "form" } do |form| %>
+    <%= ui :card, title: tag.h2("Provider", class: "ai-settings__title") do %>
+      <%= switch_field form, :enabled, label: "Switch AI on", hint: "For everyone on the team. Turn it off and the assistant and suggestions disappear; chats stay." %>
 
-        <%= form.label :provider, "Provider", class: "record-form__label" %>
-        <%= form.select :provider, providers.map { |key, info| [ info[:name], key ] }, { include_blank: "Choose…" }, class: "input input--select", data: { action: "change->form#submit" } %>
+      <%= form.ui :field, :provider, label: "Provider" do %>
+        <%= form.select :provider, providers.map { |key, info| [ info[:name], key ] }, { include_blank: "Choose…" }, data: { action: "change->form#submit" } %>
+      <% end %>
 
-        <%= form.label :api_key, "API key", class: "record-form__label" %>
+      <%= form.ui :field, :api_key, label: "API key" do %>
         <%= secret_field form, :api_key, placeholder: @setting.api_key.present? ? "Saved; paste a new one to replace it" : "From your provider’s console" %>
+      <% end %>
 
-        <% if @setting.provider.in?(%w[ollama openai opencode]) %>
-          <%= form.label :api_base, "Address (your own server, or a compatible one; leave blank otherwise)", class: "record-form__label" %>
-          <%= form.url_field :api_base, class: "input full-width", placeholder: providers.dig(@setting.provider, :base) || "https://api.openai.com/v1", autocomplete: "off" %>
+      <% if @setting.provider.in?(%w[ollama openai opencode]) %>
+        <%= form.ui :field, :api_base, label: "Address", description: "Your own server, or a compatible one; leave blank otherwise." do %>
+          <%= form.ui :input, :api_base, type: :url, placeholder: providers.dig(@setting.provider, :base) || "https://api.openai.com/v1", autocomplete: "off" %>
         <% end %>
-      </section>
-
-      <section class="settings__section flex flex-column gap-half" id="models">
-        <header>
-          <h2 class="divider">Models</h2>
-        </header>
-        <span class="record-form__hint">The main model answers the Ask panel and most suggestions; the fast one does small jobs, like summing up the day. With OpenCode Zen they can be from different families: Runwell reaches each the way Zen serves it.</span>
-        <turbo-frame id="ai_models" class="flex flex-column gap-half">
-          <% choices = @setting.model_choices %>
-          <% grouped = @setting.grouped_model_choices %>
-          <% if @setting.provider.blank? %>
-            <span class="txt-subtle">Choose a provider first, and its models show here.</span>
-          <% else %>
-            <div class="flex gap-half flex-wrap">
-              <div class="flex flex-column gap-half flex-item-grow">
-                <%= form.label :model, "Model", class: "record-form__label" %>
-                <% if choices.any? %>
-                  <% options = grouped ? grouped_options_for_select(grouped, @setting.model.to_s.delete_prefix("opencode/")) : options_for_select(choices, @setting.model.to_s.delete_prefix("opencode/")) %>
-                  <%= form.select :model, options, { include_blank: "Recommended (#{providers.dig(@setting.provider, :model)})" }, class: "input input--select full-width" %>
-                <% else %>
-                  <%= form.text_field :model, class: "input full-width", autocomplete: "off", placeholder: providers.dig(@setting.provider, :model) %>
-                <% end %>
-              </div>
-              <div class="flex flex-column gap-half flex-item-grow">
-                <%= form.label :fast_model, "Fast model, for small jobs", class: "record-form__label" %>
-                <% if choices.any? %>
-                  <% options = grouped ? grouped_options_for_select(grouped, @setting.fast_model.to_s.delete_prefix("opencode/")) : options_for_select(choices, @setting.fast_model.to_s.delete_prefix("opencode/")) %>
-                  <%= form.select :fast_model, options, { include_blank: @setting.model.present? ? "Same as the model" : "Recommended (#{providers.dig(@setting.provider, :fast)})" }, class: "input input--select full-width" %>
-                <% else %>
-                  <%= form.text_field :fast_model, class: "input full-width", autocomplete: "off", placeholder: providers.dig(@setting.provider, :fast) %>
-                <% end %>
-              </div>
-            </div>
-            <% if @setting.models_loading? %>
-              <span class="txt-x-small txt-subtle" data-controller="poll" data-poll-interval-value="2">Fetching <%= @setting.provider_short_name %>’s models…</span>
-            <% elsif @setting.models_error.present? %>
-              <span class="txt-x-small txt-negative">Couldn’t list <%= @setting.provider_short_name %>’s models (<%= @setting.models_error %>), so type a model as the provider names it.</span>
-            <% elsif choices.any? %>
-              <span class="txt-x-small txt-subtle"><%= pluralize(choices.size, "model") %> from <%= @setting.provider_short_name %>. A model a provider lists may still be unavailable: Test the connection after choosing.</span>
-            <% end %>
-          <% end %>
-        </turbo-frame>
-      </section>
-
-      <section class="settings__section flex flex-column gap-half">
-        <header>
-          <h2 class="divider"><%= term(:client, count: 2) %></h2>
-        </header>
-        <div class="record-form__toggle">
-          <div class="record-form__toggle-text">
-            <%= form.label :portal, "Let #{term(:client, count: 2).downcase} ask too", class: "record-form__label" %>
-            <span class="record-form__hint">An Ask button in their portal. It sees only what their portal shows, can send a request for the team (they approve it first), and never decides on an agreement.</span>
-          </div>
-          <label class="switch flex-item-no-shrink">
-            <%= form.check_box :portal, class: "switch__input" %>
-            <span class="switch__btn"></span>
-          </label>
-        </div>
-      </section>
-
-      <section class="settings__section flex flex-column gap-half">
-        <header>
-          <h2 class="divider">Budget</h2>
-        </header>
-        <%= form.label :monthly_budget_cents, "Monthly budget (optional)", class: "record-form__label" %>
-        <%= money_field form, :monthly_budget_cents, class: "input", placeholder: "No limit" %>
-        <span class="record-form__hint">When this month’s spend reaches it, AI pauses until next month.</span>
-      </section>
-
-      <div><button type="submit" class="btn btn--link txt-small">Save</button></div>
+      <% end %>
     <% end %>
 
-    <section class="settings__section flex flex-column gap-half" id="test">
-      <header>
-        <h2 class="divider">Check</h2>
-      </header>
-      <div class="flex align-start gap-half flex-wrap">
-        <%= button_to "Test the connection", settings_ai_test_path, class: "btn txt-small", disabled: !@setting.ready? %>
-        <%= button_to "Refresh the models", settings_ai_models_path, class: "btn txt-small", disabled: @setting.provider.blank? %>
-        <turbo-frame id="ai_test" class="txt-small flex flex-column gap-half">
-          <% test = @setting.last_test || {} %>
-          <% if test["results"].present? %>
-            <% test["results"].each do |result| %>
-              <%# herb:key result["model"] %>
-              <% if result["ok"] %>
-                <span class="txt-subtle"><%= icon_tag "check" %> <%= result["route"] %> answered in <%= result["seconds"] %>s.</span>
+    <%= ui :card, id: "models", title: tag.h2("Models", class: "ai-settings__title"), description: "The main model answers the Ask panel and most suggestions; the fast one does small jobs, like finding the tasks in a note. With OpenCode Zen they can be from different families: Runwell reaches each the way Zen serves it." do %>
+      <turbo-frame id="ai_models" class="ai-settings__stack">
+        <% choices = @setting.model_choices %>
+        <% grouped = @setting.grouped_model_choices %>
+        <% if @setting.provider.blank? %>
+          <%= ui :empty, size: :sm, description: "Choose a provider first, and its models show here." %>
+        <% else %>
+          <div class="ai-settings__pair">
+            <%= form.ui :field, :model, label: "Model" do %>
+              <% if choices.any? %>
+                <% options = grouped ? grouped_options_for_select(grouped, @setting.model.to_s.delete_prefix("opencode/")) : options_for_select(choices, @setting.model.to_s.delete_prefix("opencode/")) %>
+                <%= form.select :model, options, { include_blank: "Recommended (#{providers.dig(@setting.provider, :model)})" } %>
               <% else %>
-                <span class="txt-negative"><%= result["route"] %>: <%= result["error"] %></span>
+                <%= form.text_field :model, autocomplete: "off", placeholder: providers.dig(@setting.provider, :model) %>
               <% end %>
             <% end %>
-            <span class="txt-x-small txt-subtle">Tested <%= time_ago_in_words(Time.zone.parse(test["at"])) %> ago.</span>
-          <% elsif test["requested_at"].present? && Time.zone.parse(test["requested_at"]) > 2.minutes.ago %>
-            <span class="txt-subtle" data-controller="poll" data-poll-interval-value="2">Asking <%= @setting.provider_name %>…</span>
+            <%= form.ui :field, :fast_model, label: "Fast model, for small jobs" do %>
+              <% if choices.any? %>
+                <% options = grouped ? grouped_options_for_select(grouped, @setting.fast_model.to_s.delete_prefix("opencode/")) : options_for_select(choices, @setting.fast_model.to_s.delete_prefix("opencode/")) %>
+                <%= form.select :fast_model, options, { include_blank: @setting.model.present? ? "Same as the model" : "Recommended (#{providers.dig(@setting.provider, :fast)})" } %>
+              <% else %>
+                <%= form.text_field :fast_model, autocomplete: "off", placeholder: providers.dig(@setting.provider, :fast) %>
+              <% end %>
+            <% end %>
+          </div>
+          <% if @setting.models_loading? %>
+            <p class="ai-settings__hint" data-controller="poll" data-poll-interval-value="2"><%= ui :spinner %> Fetching <%= @setting.provider_short_name %>’s models…</p>
+          <% elsif @setting.models_error.present? %>
+            <%= ui :alert, variant: :destructive, description: "Couldn’t list #{@setting.provider_short_name}’s models (#{@setting.models_error}), so type a model as the provider names it." %>
+          <% elsif choices.any? %>
+            <p class="ai-settings__hint"><%= pluralize(choices.size, "model") %> from <%= @setting.provider_short_name %>. A model a provider lists may still be unavailable: Test the connection after choosing.</p>
           <% end %>
-        </turbo-frame>
-      </div>
-    </section>
+        <% end %>
+      </turbo-frame>
+    <% end %>
 
-    <section class="settings__section flex flex-column gap-half">
-      <header>
-        <h2 class="divider">This month</h2>
-      </header>
-      <p class="margin-none"><strong><%= number_to_currency(@spent, precision: @spent < 1 ? 3 : 2) %></strong><% if @setting.monthly_budget_cents %> of <%= money(@setting.monthly_budget_cents) %><% end %></p>
-      <% if @by_person.any? %>
-        <ul class="settings__scrollable-list txt-small">
-          <% @by_person.sort_by { -it.last.to_d }.each do |user_id, cost| %>
-            <%# herb:key user_id %>
-            <li class="flex align-center gap-half">
-              <%= person_tag @people[user_id], fallback: "Someone" %>
-              <span class="flex-item-grow"><%= @people[user_id]&.display_name || "Someone" %></span>
-              <span class="txt-subtle"><%= number_to_currency(cost.to_d, precision: 3) %></span>
-            </li>
+    <%= ui :card, title: tag.h2(term(:client, count: 2), class: "ai-settings__title") do %>
+      <%= switch_field form, :portal, label: "Let #{term(:client, count: 2).downcase} ask too", hint: "An Ask button in their portal. It sees only what their portal shows, and can send a request for the team (they approve it first)." %>
+    <% end %>
+
+    <%= ui :card, title: tag.h2("Budget", class: "ai-settings__title") do %>
+      <%= form.ui :field, :monthly_budget_cents, label: "Monthly budget (optional)", description: "When this month’s spend reaches it, AI pauses until next month." do %>
+        <%= money_field form, :monthly_budget_cents, placeholder: "No limit" %>
+      <% end %>
+    <% end %>
+
+    <div><%= ui :button, type: :submit, content: "Save" %></div>
+  <% end %>
+
+  <%= ui :card, id: "test", title: tag.h2("Check", class: "ai-settings__title") do %>
+    <div class="ai-settings__row">
+      <%= button_to "Test the connection", settings_ai_test_path, class: "ui-button", data: { variant: "outline", size: "sm" }, disabled: !@setting.ready? %>
+      <%= button_to "Refresh the models", settings_ai_models_path, class: "ui-button", data: { variant: "outline", size: "sm" }, disabled: @setting.provider.blank? %>
+    </div>
+    <turbo-frame id="ai_test" class="ai-settings__stack">
+      <% test = @setting.last_test || {} %>
+      <% if test["results"].present? %>
+        <% test["results"].each do |result| %>
+          <%# herb:key result["model"] %>
+          <% if result["ok"] %>
+            <p class="ai-settings__result"><%= icon_tag "check" %> <%= result["route"] %> answered in <%= result["seconds"] %>s.</p>
+          <% else %>
+            <%= ui :alert, variant: :destructive, title: result["route"], description: result["error"] %>
           <% end %>
-        </ul>
-        <p class="txt-x-small txt-subtle margin-none">Ask panel <%= number_to_currency(@by_kind["ask"].to_d, precision: 3) %> · suggestions <%= number_to_currency(@by_kind["suggestion"].to_d, precision: 3) %><% if @by_kind["plugin"] %> · other plugins <%= number_to_currency(@by_kind["plugin"].to_d, precision: 3) %><% end %></p>
-      <% else %>
-        <p class="txt-small txt-subtle margin-none">Nothing yet.</p>
+        <% end %>
+        <p class="ai-settings__hint">Tested <%= time_ago_in_words(Time.zone.parse(test["at"])) %> ago.</p>
+      <% elsif test["requested_at"].present? && Time.zone.parse(test["requested_at"]) > 2.minutes.ago %>
+        <p class="ai-settings__hint" data-controller="poll" data-poll-interval-value="2"><%= ui :spinner %> Asking <%= @setting.provider_name %>…</p>
       <% end %>
-      <% if @suggestions.any? %>
-        <p class="txt-x-small txt-subtle margin-none">
-          Suggestions used: <%= @suggestions.group_by { it.first.first }.map { |kind, rows| counts = rows.to_h { |(_, state), n| [ state, n ] }; "#{kind.humanize.downcase} #{counts["accepted"].to_i} of #{counts.values.sum}" }.join(" · ") %>
-        </p>
-      <% end %>
-    </section>
+    </turbo-frame>
+  <% end %>
 
-    <section class="settings__section flex flex-column gap-half">
-      <header>
-        <h2 class="divider">What it sees</h2>
-      </header>
-      <ul class="txt-small margin-none">
-        <li>Only what the person using it may see, through the same actions an AI connected over MCP uses.</li>
-        <li>Each record it reads, and your question, go to your provider. Choose Ollama to keep everything on your own server.</li>
-        <li>A <%= term(:client).downcase %> marked “Keep out of AI” (in its sidebar) gets no assistant or suggestions on its records.</li>
-        <li>Every change it makes was approved by a person, and shows in history as their agent “via Runwell AI”.</li>
+  <%= ui :card, title: tag.h2("This month", class: "ai-settings__title") do %>
+    <p class="ai-settings__spent"><strong><%= number_to_currency(@spent, precision: @spent < 1 ? 3 : 2) %></strong><% if @setting.monthly_budget_cents %> of <%= money(@setting.monthly_budget_cents) %><% end %></p>
+    <% if @by_person.any? %>
+      <ul class="ai-settings__list">
+        <% @by_person.sort_by { -it.last.to_d }.each do |user_id, cost| %>
+          <%# herb:key user_id %>
+          <li class="ai-settings__person">
+            <%= person_tag @people[user_id], fallback: "Someone" %>
+            <span class="ai-settings__grow"><%= @people[user_id]&.display_name || "Someone" %></span>
+            <span class="ai-settings__hint"><%= number_to_currency(cost.to_d, precision: 3) %></span>
+          </li>
+        <% end %>
       </ul>
-    </section>
+      <p class="ai-settings__hint">Ask panel <%= number_to_currency(@by_kind["ask"].to_d, precision: 3) %> · suggestions <%= number_to_currency(@by_kind["suggestion"].to_d, precision: 3) %><% if @by_kind["plugin"] %> · other plugins <%= number_to_currency(@by_kind["plugin"].to_d, precision: 3) %><% end %></p>
+    <% else %>
+      <%= ui :empty, size: :sm, description: "Nothing yet." %>
+    <% end %>
+    <% if @suggestions.any? %>
+      <p class="ai-settings__hint">
+        Suggestions used: <%= @suggestions.group_by { it.first.first }.map { |kind, rows| counts = rows.to_h { |(_, state), n| [ state, n ] }; "#{kind.humanize.downcase} #{counts["accepted"].to_i} of #{counts.values.sum}" }.join(" · ") %>
+      </p>
+    <% end %>
+  <% end %>
 
-    <section class="settings__section flex flex-column gap-half">
-      <header>
-        <h2 class="divider">Kept out of AI</h2>
-      </header>
-      <% if @excluded.any? %>
-        <ul class="settings__scrollable-list txt-small">
-          <% @excluded.each do |client| %>
-            <%# herb:key client.id %>
-            <li><%= link_to client.name, client, class: "txt-link" %></li>
-          <% end %>
-        </ul>
-      <% else %>
-        <p class="txt-small txt-subtle margin-none">No <%= term(:client, count: 2).downcase %>. Keep one out from the switch in its sidebar.</p>
-      <% end %>
-    </section>
-  </div>
-</section>
+  <%= ui :card, title: tag.h2("What it sees", class: "ai-settings__title") do %>
+    <ul class="ai-settings__bullets">
+      <li>Only what the person using it may see, through the same actions an AI connected over MCP uses.</li>
+      <li>Each record it reads, and your question, go to your provider. Choose Ollama to keep everything on your own server.</li>
+      <li>A <%= term(:client).downcase %> marked “Keep out of AI” (in its sidebar) gets no assistant or suggestions on its records.</li>
+      <li>Every change it makes was approved by a person, and shows in history as their agent “via Runwell AI”.</li>
+    </ul>
+  <% end %>
+
+  <%= ui :card, title: tag.h2("Kept out of AI", class: "ai-settings__title") do %>
+    <% if @excluded.any? %>
+      <ul class="ai-settings__list">
+        <% @excluded.each do |client| %>
+          <%# herb:key client.id %>
+          <li><%= link_to client.name, client_path(client) %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <%= ui :empty, size: :sm, description: "No #{term(:client, count: 2).downcase}. Keep one out from the switch in its sidebar." %>
+    <% end %>
+  <% end %>
+</div>

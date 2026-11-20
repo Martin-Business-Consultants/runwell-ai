@@ -1,22 +1,23 @@
 <%# locals: (suggestion:, frame_id:) %>
 <% p = suggestion.payload %>
-<% owner = User.people.active.find_by(id: p["owner_id"]) if p["action"] == "assign" %>
-<p class="margin-none">
-  <% if p["action"] == "delete" %>
-    <strong>Delete it</strong>
+<% decline = p["action"].in?(%w[decline delete]) %>
+<% owner = User.people.active.find_by(id: p["owner_id"]) unless decline %>
+<p class="ai-suggestion__headline">
+  <% if decline %>
+    <strong>Decline it</strong>
   <% elsif owner %>
-    <strong>Assign it to <%= owner.display_name %></strong><% if p["due_on"].present? %> · by <%= l(Date.parse(p["due_on"]), format: :long) rescue p["due_on"] %><% end %>
+    <strong>Accept it for <%= owner.display_name %></strong><% if p["due_on"].present? %> · by <%= l(Date.parse(p["due_on"]), format: :long) rescue p["due_on"] %><% end %>
   <% else %>
-    <strong>Assign it</strong> <span class="txt-subtle">(no one on the team fits)</span>
+    <strong>Accept it</strong> <span class="ai-suggestion__meta">(no one on the team fits)</span>
   <% end %>
 </p>
-<p class="txt-small txt-subtle margin-none"><%= p["reason"] %></p>
+<p class="ai-suggestion__meta"><%= p["reason"] %></p>
 <% if p["out_of_scope"] %>
-  <p class="txt-small margin-none"><span class="status-tag status-tag--waiting">Beyond what its engagement covers</span></p>
+  <p><%= ui :badge, variant: :warning, content: "Beyond what its #{term(:work).downcase} covers" %></p>
 <% end %>
-<div class="flex gap-half">
-  <% if (p["action"] == "delete" && can?(:delete_records)) || owner %>
-    <%= button_to "Do this", ai_suggestion_path(suggestion), method: :patch, params: { decision: "accept" }, class: "btn btn--link txt-small", form: { data: { turbo_frame: "_top" } } %>
+<div class="ai-suggestion__actions">
+  <% if decline || owner %>
+    <%= button_to "Do this", ai_suggestion_path(suggestion), method: :patch, params: { decision: "accept" }, class: "ui-button", data: { variant: "default", size: "sm" }, form: { data: { turbo_frame: "_top" } } %>
   <% end %>
   <%= render "ai/suggestions/dismiss", suggestion: suggestion, frame_id: frame_id %>
 </div>

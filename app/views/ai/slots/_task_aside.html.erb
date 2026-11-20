@@ -1,0 +1,8 @@
+<%# locals: (task:) %>
+<%# A task waiting in Intake (it came in, and nobody has decided on it): who should take it on, or
+    whether to decline it. %>
+<% if task.intake? && Ai.available_for?(task) %>
+  <%= ui :card, class: "ai-aside", title: tag.h2("AI", class: "ai-aside__title") do %>
+    <%= render "ai/suggestions/card", kind: "triage", subject: task, suggestion: AiSuggestion.latest("triage", task, Current.user) %>
+  <% end %>
+<% end %>
