@@ -63,7 +63,7 @@ module RunwellAi
 
     config.to_prepare do
       Runwell::Plugins.register :ai, name: "AI", version: RunwellAi::VERSION, author: "Runwell",
-        enabled_by_default: false, requires: ">= 3.0.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-ai",
+        enabled_by_default: false, requires: ">= 6.0.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-ai",
         description: "An assistant inside Runwell (Ask, on any page) and one-click suggestions on records, through your own AI provider's key, with a monthly budget. Works through the same tools as MCP, as the person, and changes nothing until they approve it."
       Runwell::Plugins.settings :ai, "AI", -> { settings_ai_path }
       Runwell::Plugins.stylesheet :ai, "ai/ai"

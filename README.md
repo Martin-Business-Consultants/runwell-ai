@@ -5,12 +5,13 @@ AI inside [Runwell](https://github.com/Martin-Business-Consultants/runwellv2), a
 - **Ask**, on every page (<kbd>i</kbd>): a chat about the record on screen that answers from your
   records and does what you ask, as you. It can do only what you can, and shows every change for
   you to approve first.
-- **Suggestions** on records, one click each: who should take a request on (or whether to delete
-  it), the scope of a draft and a check before it's sent, the work a scope item needs, the work and
-  promises in a note, the week with a client, the day ahead.
+- **Suggestions** on records, one click each: who should take on what's waiting in Intake (or
+  whether to decline it), the sections of a piece of work, the tasks a section needs, the tasks and
+  promises in a note, and the week with a client.
+- **Your day**, a page of its own in the sidebar: what matters today, from your own late, due and
+  coming tasks.
 - **Your clients can ask too**, from their portal, if you let them: it sees only what their portal
-  shows, can send a request for your team (they approve it first), and never decides on an
-  agreement.
+  shows, and can send a request for your team (they approve it first).
 
 It uses your own account with an AI provider (Anthropic, OpenAI, Gemini, OpenRouter, OpenCode Zen,
 or your own Ollama, so nothing leaves your server), with a monthly budget. Nothing is sent anywhere
@@ -18,8 +19,9 @@ until it's switched on, and any client can be kept out of it.
 
 ## Install
 
-In Runwell (3.0 or later; plugin 1.2.0 for Runwell 2.18 to 2.x), Settings › Plugins › AI › Install, then switch it on and set it up in
-its settings. From a shell: `bin/rails "plugins:install[ai]"`.
+In Runwell 6.0 or later (plugin 2.0.0 for Runwell 3.0 to 4.x, 1.2.0 for Runwell 2.18 to 2.x),
+Settings › Plugins › AI › Install, then switch it on and set it up in its settings. From a shell:
+`bin/rails "plugins:install[ai]"`.
 
 An install that had AI before Runwell 2.18, when it was part of the core, gets this plugin
 automatically on updating, with its settings, chats and suggestions as they were.
