@@ -1,0 +1,12 @@
+<% @page_title = "Your day" %>
+<%= ui :page_header, title: @page_title, description: "What matters today, from your own #{term(:task, count: 2).downcase}: late, due today and due this week. Written by AI when you ask, once a day." %>
+
+<div class="ai-day">
+  <% if Ai.available_for? %>
+    <%= ui :card do %>
+      <%= render "ai/suggestions/card", kind: "day", subject: Current.user, suggestion: @suggestion %>
+    <% end %>
+  <% else %>
+    <%= ui :empty, title: "AI isn’t available", description: "It’s switched off, not set up, or this month’s budget is spent: Settings › Plugins › AI." %>
+  <% end %>
+</div>
