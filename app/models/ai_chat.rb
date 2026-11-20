@@ -12,7 +12,7 @@ class AiChat < ApplicationRecord
   acts_as_chat messages: :ai_messages
 
   PURPOSES = %w[ask suggestion plugin].freeze
-  SUBJECT_TYPES = %w[Client Engagement Todo ScopeItem].freeze
+  SUBJECT_TYPES = %w[Client Work Task ScopeItem].freeze
   TOOLS = [ Ai::Tools::Search, Ai::Tools::ReadRecord, Ai::Tools::FindTools, Ai::Tools::RunTool ].freeze
   STUCK_AFTER = 5.minutes
 

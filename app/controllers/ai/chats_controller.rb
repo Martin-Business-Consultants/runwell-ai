@@ -1,4 +1,4 @@
-# The Ask panel (layouts/shared/ai_panel): the in-app AI's chat about the record on screen.
+# The Ask panel (ai/slots/nav_actions): the in-app AI's chat about the record on screen.
 # show answers the panel for a chat; current finds the person's chat about a record (or starts
 # one); create starts afresh. Chats are each person's own. Agents reach Runwell over MCP, so none
 # of this is an agent tool.
@@ -23,14 +23,7 @@ class Ai::ChatsController < Ai::BaseController
   end
 
   private
-    def subject
-      return unless params[:record].present?
-
-      type, id = params[:record].to_s.split(":", 2)
-      return unless type.in?(AiChat::SUBJECT_TYPES)
-
-      type == "Engagement" && !id.to_s.match?(/\A\d+\z/) ? Engagement.find_by(ref: id) : type.constantize.find_by(id: id)
-    end
+    def subject = Ai.find_ref(params[:record], types: AiChat::SUBJECT_TYPES)
 
     def require_ai
       render "ai/chats/unavailable" unless Ai.ready?

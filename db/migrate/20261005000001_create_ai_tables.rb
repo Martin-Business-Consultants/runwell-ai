@@ -149,7 +149,7 @@ class CreateAiTables < ActiveRecord::Migration[8.1]
       end
     end
 
-    add_foreign_key :ai_chats, :contacts unless foreign_key_exists?(:ai_chats, :contacts)
+    add_foreign_key :ai_chats, :contacts if table_exists?(:contacts) && !foreign_key_exists?(:ai_chats, :contacts)
     add_foreign_key :ai_chats, :ruby_llm_models unless foreign_key_exists?(:ai_chats, :ruby_llm_models)
     add_foreign_key :ai_chats, :users unless foreign_key_exists?(:ai_chats, :users)
     add_foreign_key :ai_messages, :ai_chats unless foreign_key_exists?(:ai_messages, :ai_chats)
