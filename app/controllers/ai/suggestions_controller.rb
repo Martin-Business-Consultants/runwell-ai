@@ -35,11 +35,8 @@ class Ai::SuggestionsController < Ai::BaseController
 
   private
     def find_subject
-      type, id = params[:record].to_s.split(":", 2)
-      case type
-      when "User" then Current.user
-      when "Engagement" then Engagement.find_by(ref: id) || Engagement.find_by(id: id)
-      when *(Ai::Suggestions::DEFINITIONS.values.flat_map(&:types).uniq - %w[User Engagement]) then type.constantize.find_by(id: id)
-      end
+      return Current.user if params[:record].to_s.start_with?("User:")
+
+      Ai.find_ref(params[:record], types: Ai::Suggestions::DEFINITIONS.values.flat_map(&:types).uniq - %w[User])
     end
 end

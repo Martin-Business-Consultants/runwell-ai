@@ -26,7 +26,7 @@ module Ai
 
     def excluded?(record)
       record = record.subject if record.is_a?(Note)
-      client = record.is_a?(Client) ? record : (record.try(:client) || record.try(:engagement)&.client)
+      client = record.is_a?(Client) ? record : (record.try(:client) || record.try(:work)&.client)
       client.present? && AiExclusion.client_ids.include?(client.id)
     end
 
@@ -64,6 +64,18 @@ module Ai
     # The same for a client's contact in the portal: their own token, so it reaches only what
     # their portal shows.
     def run_portal_tool(contact, tool, arguments) = Agent::Dispatch.run_as(contact, tool, arguments, name: TOKEN_NAME)
+
+    # A record as the AI and its links name it: "Work:P-3" (a piece of work by its ref), else
+    # "Type:id" ("Task:12", "Client:4").
+    def ref(record) = record.is_a?(Work) ? "Work:#{record.ref}" : "#{record.class.name}:#{record.id}"
+
+    # The record a "Type:id" names, among the types given (a piece of work by ref or id).
+    def find_ref(value, types:)
+      type, id = value.to_s.split(":", 2)
+      return unless type.in?(types) && id.present?
+
+      type == "Work" ? (Work.find_by(ref: id.upcase) || Work.find_by(id: id)) : type.constantize.find_by(id: id)
+    end
 
     def trim(value)
       text = value.is_a?(String) ? value : JSON.generate(value)

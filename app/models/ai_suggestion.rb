@@ -1,6 +1,6 @@
 # Something the in-app AI suggested on a record, in a structured shape a person can use in one
-# click: who should take a request, sections for an engagement, work for a section,
-# promises and tasks in a note, a summary. Made in a job (AiSuggestionJob) through its own AiChat,
+# click: who should take on what came in, sections for a piece of work, tasks for a
+# section, promises and tasks in a note, the day ahead, a summary. Made in a job (AiSuggestionJob) through its own AiChat,
 # whose usage says what it cost; accepted or dismissed by the person, so Settings > Plugins > AI can show
 # which suggestions earn their keep.
 class AiSuggestion < ApplicationRecord

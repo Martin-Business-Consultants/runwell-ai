@@ -1,8 +1,9 @@
 module AiHelper
-  REF = /\b(Client|Engagement|Todo|ScopeItem):([A-Za-z]{1,4}-\d+|\d+)\b/
+  # Todo and Engagement are what chats before Runwell 5.0 called tasks and work: still linked.
+  REF = /\b(Client|Work|Task|ScopeItem|Engagement|Todo):([A-Za-z]{1,4}-\d+|\d+)\b/
 
   # The AI's words as safe HTML: paragraphs, bullets, **bold**, `code`, and record refs
-  # ("Todo:12", "Engagement:P-3") as links to the records.
+  # ("Task:12", "Work:P-3") as links to the records.
   def ai_text(text)
     return if text.blank?
 
@@ -34,7 +35,7 @@ module AiHelper
   end
 
   # The arguments of a proposed change, as "Field: value" lines a person can check: nested
-  # fields flattened (todo[title] reads "Title"), dates as people say them, ids as names.
+  # fields flattened (task[title] reads "Title"), dates as people say them, ids as names.
   def ai_proposal_details(tool_call)
     flatten = ->(hash) { hash.to_h.flat_map { |key, value| value.is_a?(Hash) ? flatten.(value) : [ [ key.to_s, value ] ] } }
     flatten.(tool_call.arguments.to_h.stringify_keys["arguments"] || {}).map do |key, value|
@@ -65,17 +66,17 @@ module AiHelper
         when "settings/appearances" then [ "Write a theme from our brand colors", "Make it calmer and easier to read" ]
         when "settings/fields" then [ "Suggest custom fields we’d use" ]
         when "settings/audit_logs" then [ "Anything unusual in the last week’s sign-ins?", "Who changed settings this month?" ]
-        when "requests" then [ "Suggest who should take each open request", "Which requests are waiting longest?" ]
-        when "todos" then [ "What’s blocked, and why?", "Who has too much on?" ]
-        else [ "What needs me today?", "What changed since yesterday?", "Find overdue #{t.term(:work, count: 2).downcase}" ]
+        when "intakes" then [ "Suggest who should take each one waiting here", "What’s been waiting longest?" ]
+        when "tasks" then [ "What’s blocked, and why?", "Who has too much on?" ]
+        else [ "What needs me today?", "What changed since yesterday?", "Find overdue #{t.term(:task, count: 2).downcase}" ]
         end
       when Client then [ "What’s going on with #{subject.name}?", "What’s due for them this week?", "Draft this week’s update for #{subject.name}" ]
-      when Engagement then [ "Where are we on #{subject.ref}?", "What’s overdue or blocked here?", "Draft the scope for the next #{t.term(:scope_item).downcase}s" ]
-      when Todo
-        if subject.request? then [ "Who should take this on?", "Does this fit an engagement we have?", "Draft a reply" ]
-        else [ "What’s needed to finish this?", "Split this into smaller #{t.term(:work, count: 2).downcase}", "Who should own this?" ]
+      when Work then [ "Where are we on #{subject.title}?", "What’s overdue or blocked here?", "Suggest the next #{t.term(:scope_item, count: 2).downcase}" ]
+      when Task
+        if subject.intake? then [ "Who should take this on?", "Does this fit #{t.term(:work).downcase} we have?", "Draft a reply" ]
+        else [ "What’s needed to finish this?", "Split this into smaller #{t.term(:task, count: 2).downcase}", "Who should own this?" ]
         end
-      when ScopeItem then [ "Plan the #{t.term(:work).downcase} for this", "What’s left to deliver?" ]
+      when ScopeItem then [ "Plan the #{t.term(:task, count: 2).downcase} for this", "What’s left to deliver?" ]
       end
     base + Runwell::Plugins.enabled_ai_prompts.filter_map { |_, prompt| prompt.label if prompt.applies_to?(subject) }
   end
@@ -97,8 +98,8 @@ module AiHelper
     def ai_record_path(type, id)
       case type
       when "Client" then client_path(id)
-      when "Engagement" then engagement_path(id.match?(/\A\d+\z/) ? Engagement.find_by(id: id)&.ref || id : id)
-      when "Todo" then todo_path(id)
+      when "Work", "Engagement" then work_path(id.match?(/\A\d+\z/) ? Work.find_by(id: id)&.ref || id : id)
+      when "Task", "Todo" then task_path(id)
       when "ScopeItem" then scope_item_path(id)
       end
     rescue ActionController::UrlGenerationError

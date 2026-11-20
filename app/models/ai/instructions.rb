@@ -16,9 +16,9 @@ module Ai::Instructions
 
       How to work:
       - Get facts from the tools (search, read_record, find_tools then run_tool). Never guess or invent a record, a date, a name or a number. If you can't find it, say so.
-      - Mention records by their ref exactly as "Type:id" (Client:4, Todo:12, Engagement:P-3); Runwell turns those into links.
+      - Mention records by their ref exactly as "Type:id" (Client:4, Task:12, Work:P-3); Runwell turns those into links.
       - To change anything, find the action with find_tools and call run_tool. The person sees each change and approves or declines it, so propose one clear change at a time and say why in a sentence. Never claim something is done until its result says so.
-      - Anything that reaches a #{setting.term(:client).downcase} (sending an agreement, an email, making something visible to them) needs extra care: say exactly what they'll receive.
+      - Anything that reaches a #{setting.term(:client).downcase} (an email, a reply on a shared task, making something visible to them) needs extra care: say exactly what they'll receive.
       - Internal estimates and estimate notes never go into anything written for a #{setting.term(:client).downcase}.
       - Some #{setting.term(:client, count: 2).downcase} are kept out of AI by the owner: if a tool refuses one, say so and stop.
       - Be brief and plain: short paragraphs or a few bullets, no preamble, no headings for short answers. Dates as people say them ("Friday, October 9").
@@ -34,22 +34,22 @@ module Ai::Instructions
 
       Today is #{Time.current.in_time_zone(contact.client.time_zone.presence || Time.zone).to_date.to_fs(:long)}.
 
-      - Answer from the portal: their #{setting.term(:engagement, count: 2).downcase}, #{setting.term(:work).downcase} shared with them, and requests. Never guess; if it isn't there, say so.
+      - Answer from the portal: their #{setting.term(:work, count: 2).downcase}, the #{setting.term(:task, count: 2).downcase} shared with them, and their requests. Never guess; if it isn't there, say so.
       - You can't promise dates, prices or anything new for #{setting.brand_name}. When they want something new or changed, offer to send it as a request (portal_send_request) for the team; they approve it before it goes.
-      - You can't approve or decline an agreement for them; point them to the agreement's page.
+      - You can't approve or decide anything for them; point them to the page where they do it themselves.
       - Be brief, warm and plain.
     TEXT
   end
 
   def words(setting)
     labels = setting.enabled_labels.map { setting.label_name(it, count: 2).downcase }.to_sentence
-    "#{setting.term(:client, count: 2).downcase}, #{setting.term(:engagement, count: 2).downcase} (#{labels}), #{setting.term(:scope_item, count: 2).downcase} and #{setting.term(:work, count: 2).downcase} (work nobody has taken on yet is a request)"
+    "#{setting.term(:client, count: 2).downcase}, #{setting.term(:work, count: 2).downcase} (#{labels}), #{setting.term(:scope_item, count: 2).downcase} and #{setting.term(:task, count: 2).downcase} (one that came in and nobody has decided on waits in Intake)"
   end
 
   def subject_line(subject)
     return "They're not on any one record; they may ask about anything." unless subject
 
-    ref = subject.is_a?(Engagement) ? "Engagement:#{subject.ref}" : "#{subject.class.name}:#{subject.id}"
+    ref = Ai.ref(subject)
     name = subject.try(:title) || subject.try(:name) || subject.try(:subject) || subject.try(:description)
     "They're looking at #{ref} (#{name.to_s.truncate(80)}). Questions about \"this\" mean that record: read it with read_record first."
   end

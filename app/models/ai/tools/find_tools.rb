@@ -3,7 +3,7 @@
 class Ai::Tools::FindTools < Ai::Tool
   LIMIT = 8
 
-  description "Find the Runwell actions for a job (\"create work\", \"assign work\", \"briefing\", \"add a section\"). Answers each action's name, what it does, whether it changes anything, and its input schema, to call with run_tool."
+  description "Find the Runwell actions for a job (\"add a task\", \"assign a task\", \"accept from intake\", \"add a section\"). Answers each action's name, what it does, whether it changes anything, and its input schema, to call with run_tool."
   parameter :query, description: "What you want to do, in a few words"
 
   def self.tool_name = "find_tools"

@@ -1,10 +1,10 @@
 # The portal assistant's one tool: the client portal's own actions, as the signed-in contact, so
 # it sees exactly what their portal shows. Reading runs at once; sending a request waits for the
-# contact to approve it. Deciding on an agreement is never offered: a person does that themselves.
+# contact to approve it. Nothing else (replies, priorities, decisions) is offered: a person does those themselves.
 class Ai::Tools::PortalAction < Ai::Tool
-  ALLOWED = %w[portal_me portal_engagements portal_engagement portal_work portal_requests portal_send_request].freeze
+  ALLOWED = %w[portal_me portal_works portal_work portal_tasks portal_task portal_requests portal_send_request].freeze
 
-  description "Use the client portal: #{ALLOWED.join(", ")}. portal_engagement takes { ref }. portal_send_request takes { request: { subject, body } } and waits for the client to approve it."
+  description "Use the client portal: #{ALLOWED.join(", ")}. portal_work takes { ref }, portal_task { id }. portal_send_request takes { request: { subject, body, work } } and waits for the client to approve it."
   parameters(
     type: "object",
     properties: {
