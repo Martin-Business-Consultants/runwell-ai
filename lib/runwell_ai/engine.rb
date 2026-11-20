@@ -14,6 +14,7 @@ module RunwellAi
             resources :decisions, only: :create
           end
           resources :suggestions, only: %i[create show update]
+          resource :day, only: :show
           resources :clients, only: [] do
             resource :exclusion, only: %i[create destroy]
           end
@@ -67,6 +68,8 @@ module RunwellAi
       Runwell::Plugins.settings :ai, "AI", -> { settings_ai_path }
       Runwell::Plugins.stylesheet :ai, "ai/ai"
       Runwell::Plugins.shortcut :ai, "i", "Ask AI about what’s on screen"
+      # The day ahead has a page of its own: the home page it sat on went in Runwell 5.0.
+      Runwell::Plugins.nav :ai, "Your day", -> { ai_day_path if Ai.available_for? }, icon: "ai"
       Runwell::Plugins.slot :nav_actions, :ai, "ai/slots/nav_actions"
       Runwell::Plugins.slot :client_aside, :ai, "ai/slots/client_aside"
       Runwell::Plugins.slot :task_aside, :ai, "ai/slots/task_aside"
