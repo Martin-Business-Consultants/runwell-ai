@@ -151,10 +151,11 @@ whose task is gone; Factory's tables stay, unread. Migrations are safe on a live
 - Staff controllers inherit `Ai::BaseController` (404 while switched off; the queue's inherit
   `Ai::Queue::BaseController`); the portal's inherits
   `Portal::BaseController`. Every action declares an agent tool or `agent_exempt`
-- Use only gems Runwell bundles (RubyLLM is one): plugins load outside Bundler
+- A gem it needs goes in `ai.gemspec` (RubyLLM is one): Runwell 7.1 and later install it for the
+  plugin, matching the core's own where it has them, and earlier ones bundle RubyLLM themselves
 - Write for anyone running something (a business, a team, a household): never one industry's jargon
 
 ## Release
 
-Bump `lib/runwell_ai/version.rb`, commit, then `git tag v3.1.0 && git push --tags`. The workflow
+Bump `lib/runwell_ai/version.rb`, commit, then `git tag v3.2.0 && git push --tags`. The workflow
 publishes the release; installs update from Settings › Plugins.

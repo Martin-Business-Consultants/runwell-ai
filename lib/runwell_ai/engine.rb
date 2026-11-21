@@ -1,5 +1,5 @@
 module RunwellAi
-  # A Runwell plugin: AI inside Runwell, through RubyLLM (which the core bundles) and the install's
+  # A Runwell plugin: AI inside Runwell, through RubyLLM (named in the gemspec) and the install's
   # own provider key, and the queue of work people mark ready for AI agents running unattended on
   # runners (Ai::Queue, with runwell-runner in runner/; the Factory plugin until 3.1.0). It owns its
   # tables (ai_*, and RubyLLM's ruby_llm_*), points at core records by id, and reaches the core only

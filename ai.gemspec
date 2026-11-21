@@ -10,4 +10,5 @@ Gem::Specification.new do |spec|
   spec.files = Dir["{app,config,db,lib}/**/*"]
   spec.required_ruby_version = ">= 3.3"
   spec.add_dependency "rails", ">= 8.1"
+  spec.add_dependency "ruby_llm", "~> 2.1.1"
 end
